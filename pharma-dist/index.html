@@ -277,10 +277,7 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "44628967203",
   appId: "1:44628967203:web:86d8480cb0a8c9a02f1696"
 };
-let GEMINI_KEY = localStorage.getItem("pa_gemini_key") || "AIzaSyCQSgzd76tfk1Hg7W7LZteSfVndEoMKs7A";
-const ADMIN_PASSWORD = "pharma2025admin";
-const OWNER_EMAIL = "father33223@gmail.com";
-const SETTINGS_PASSWORD = "ali@settings2025";
+let GEMINI_KEY = localStorage.getItem("pa_gemini_key") || "";
 // ============================================================
 
 // Register Service Worker (PWA)
@@ -296,6 +293,62 @@ const auth = firebase.auth();
 const firestore = firebase.firestore();
 const rtdb = firebase.database();
 const googleProvider = new firebase.auth.GoogleAuthProvider();
+
+// ====== SECURITY HELPERS ======
+async function loadAppConfig(){
+  if(GEMINI_KEY) return;
+  try{
+    const snap=await firestore.collection('config').doc('gemini').get();
+    if(snap.exists&&snap.data().key) GEMINI_KEY=snap.data().key;
+  }catch(e){}
+}
+async function isAdminUser(uid){
+  if(!uid) return false;
+  try{
+    const snap=await firestore.collection('config').doc('admins').get();
+    if(!snap.exists) return false;
+    return (snap.data().uids||[]).includes(uid);
+  }catch(e){return false;}
+}
+// ====== BADGE AWARDING ======
+async function checkAndAwardBadges(){
+  if(!currentUser||!userProfile) return;
+  const earned=userProfile.badges||[];
+  const newBadges=[];
+  const acc=userProfile.totalAnswered?Math.round((userProfile.totalCorrect/userProfile.totalAnswered)*100):0;
+  const systemsPlayed=userProfile.systemsPlayed||[];
+  const checks=[
+    {id:'first_quiz',  condition:(userProfile.totalAnswered||0)>=1},
+    {id:'streak_5',    condition:(userProfile.bestStreak||0)>=5},
+    {id:'streak_10',   condition:(userProfile.bestStreak||0)>=10},
+    {id:'first_win',   condition:(userProfile.wins||0)>=1},
+    {id:'accuracy_90', condition:acc>=90&&(userProfile.totalAnswered||0)>=20},
+    {id:'100_questions',condition:(userProfile.totalAnswered||0)>=100},
+    {id:'500_questions',condition:(userProfile.totalAnswered||0)>=500},
+    {id:'all_systems', condition:systemsPlayed.length>=20},
+  ];
+  for(const c of checks){ if(c.condition&&!earned.includes(c.id)) newBadges.push(c.id); }
+  if(newBadges.length){
+    const all=[...earned,...newBadges];
+    userProfile.badges=all;
+    await firestore.collection('users').doc(currentUser.uid).update({badges:all});
+    const names={first_quiz:'First Steps 🎓',streak_5:'On Fire 🔥',streak_10:'Lightning ⚡',first_win:'Champion 🏆',accuracy_90:'Sharpshooter 🎯','100_questions':'Dedicated 📚','500_questions':'Scholar 🧠',all_systems:'Complete 🌟'};
+    newBadges.forEach(b=>toast('Badge Unlocked: '+(names[b]||b)));
+  }
+}
+// ====== DAILY CHALLENGE ======
+async function completeDailyChallenge(score,total){
+  if(!currentUser||!userProfile) return;
+  const today=new Date().toDateString();
+  if(userProfile.lastDailyChallenge===today) return;
+  if(score/total<0.6) return;
+  const bonus=50;
+  userProfile.lastDailyChallenge=today;
+  await firestore.collection('users').doc(currentUser.uid).update({lastDailyChallenge:today});
+  await addXP(bonus,'daily');
+  toast('🏆 Daily Challenge Complete! +'+bonus+' Bonus XP');
+}
+loadAppConfig();
 
 // ====== DATA ======
 const SYSTEMS = [
@@ -353,7 +406,7 @@ setTimeout(()=>{ if(!document.getElementById('auth-page')) renderAuth(); }, 500)
 auth.onAuthStateChanged(async u=>{
   if(u){
     currentUser=u;
-    await loadProfile(u.uid);
+    await Promise.all([loadProfile(u.uid),loadAppConfig()]);
     showApp();
     navigate('dashboard');
   } else {
@@ -586,15 +639,19 @@ function renderDashboard(){
         <div style="font-size:11px;font-weight:600;color:var(--text);line-height:1.3">${s.name}</div>
       </div>`).join('')}
     </div>
-    <div class="card" style="margin-top:24px;border-color:rgba(245,158,11,.2);background:rgba(245,158,11,.05)">
+    ${(()=>{
+      const today=new Date().toDateString();
+      const done=userProfile?.lastDailyChallenge===today;
+      return `<div class="card" style="margin-top:24px;border-color:${done?'rgba(34,197,94,.25)':'rgba(245,158,11,.2)'};background:${done?'rgba(34,197,94,.05)':'rgba(245,158,11,.05)'}">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:16px">
         <div style="display:flex;align-items:center;gap:14px">
-          <div style="width:48px;height:48px;background:linear-gradient(135deg,#f59e0b,#ea580c);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 4px 20px rgba(245,158,11,.3);flex-shrink:0">🏆</div>
-          <div><h3 style="font-weight:700;color:#fff;margin-bottom:2px">Daily Challenge</h3><p style="font-size:13px;color:var(--muted)">Complete today's challenge for bonus XP!</p></div>
+          <div style="width:48px;height:48px;background:${done?'linear-gradient(135deg,#22c55e,#16a34a)':'linear-gradient(135deg,#f59e0b,#ea580c)'};border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 4px 20px ${done?'rgba(34,197,94,.3)':'rgba(245,158,11,.3)'};flex-shrink:0">${done?'✅':'🏆'}</div>
+          <div><h3 style="font-weight:700;color:#fff;margin-bottom:2px">Daily Challenge</h3><p style="font-size:13px;color:var(--muted)">${done?'Completed today! Come back tomorrow 🎉':'Score 60%+ on any quiz for +50 Bonus XP!'}</p></div>
         </div>
-        <button class="btn btn-primary" style="flex-shrink:0" onclick="navigate('systems')">Start</button>
+        ${done?`<span class="badge" style="background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);color:#4ade80;flex-shrink:0">Done ✓</span>`:`<button class="btn btn-primary" style="flex-shrink:0" onclick="navigate('systems')">Start</button>`}
       </div>
-    </div>
+    </div>`;
+    })()}
   </div>`;
 }
 
@@ -688,6 +745,12 @@ async function launchQuiz(systemId){
     <div style="text-align:center"><h2 style="font-size:20px;font-weight:700;color:#fff;margin-bottom:8px">Generating Questions...</h2><p style="color:var(--muted);font-size:14px">Gemini AI is crafting your quiz</p></div>
   </div>`;
   try{
+    const systemsPlayed=userProfile.systemsPlayed||[];
+    if(!systemsPlayed.includes(systemId)){
+      systemsPlayed.push(systemId);
+      userProfile.systemsPlayed=systemsPlayed;
+      firestore.collection('users').doc(currentUser.uid).update({systemsPlayed}).catch(()=>{});
+    }
     const qs=await geminiGenerateQuiz(sys.name,quizState.level,quizState.type,10);
     quizState={...quizState,questions:qs,current:0,score:0,results:[],earned:0,streak:0};
     renderQuestion();
@@ -767,6 +830,10 @@ async function selectAnswer(key,opt){
   if(newStreak===10)bonus=50;
   quizState.streak=newStreak;
   quizState.earned=(quizState.earned||0)+xp+bonus;
+  if(newStreak>(userProfile.bestStreak||0)){
+    userProfile.bestStreak=newStreak;
+    firestore.collection('users').doc(currentUser.uid).update({bestStreak:newStreak}).catch(()=>{});
+  }
   quizState.results=[...quizState.results,{q,selected:key,correct:isCorrect}];
   if(isCorrect) quizState.score++;
 
@@ -805,6 +872,8 @@ function nextQuestion(){
 
 async function renderQuizResults(){
   await addXP(30,'complete');
+  await completeDailyChallenge(quizState.score,quizState.questions.length);
+  await checkAndAwardBadges();
   const {score,questions,earned,results}=quizState;
   const pct=Math.round((score/questions.length)*100);
   const emoji=pct>=90?'🏆':pct>=75?'⭐':pct>=60?'👍':'📚';
@@ -1089,6 +1158,7 @@ async function endBattle(){
   await rtdb.ref(`rooms/${multiState.code}`).update({status:'finished',results:{players,winner:winner?.name}});
   const isWinner=winner?.uid===currentUser.uid;
   await addXP(isWinner?100:20,isWinner?'win':'loss');
+  await checkAndAwardBadges();
 }
 
 function renderBattleResults(results){
@@ -1395,12 +1465,31 @@ function renderProfile(){
   </div>`;
 }
 
-async function editUsername(){
-  const name=prompt('Enter new username:',currentUser?.displayName||'');
-  if(!name||!name.trim()) return;
+function editUsername(){
+  const overlay=document.createElement('div');
+  overlay.id='username-modal';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML=`
+    <div style="width:100%;max-width:380px;background:#0a1628;border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:28px">
+      <h2 style="font-family:'Sora',sans-serif;font-weight:700;color:#fff;font-size:18px;margin-bottom:6px">Edit Username</h2>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:20px">Enter your new display name</p>
+      <input id="new-username-input" class="input" type="text" placeholder="Your name..." value="${currentUser?.displayName||''}" maxlength="32" style="margin-bottom:16px"/>
+      <div style="display:flex;gap:10px">
+        <button onclick="document.getElementById('username-modal').remove()" class="btn btn-secondary" style="flex:1">Cancel</button>
+        <button onclick="saveUsername()" class="btn btn-primary" style="flex:1">Save</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  setTimeout(()=>document.getElementById('new-username-input')?.focus(),100);
+}
+
+async function saveUsername(){
+  const name=document.getElementById('new-username-input')?.value.trim();
+  if(!name) return toast('Please enter a name','error');
   try{
-    await currentUser.updateProfile({displayName:name.trim()});
-    await firestore.collection('users').doc(currentUser.uid).update({username:name.trim()});
+    await currentUser.updateProfile({displayName:name});
+    await firestore.collection('users').doc(currentUser.uid).update({username:name});
+    document.getElementById('username-modal')?.remove();
     toast('Username updated!');
     renderProfile();
     updateSidebar();
@@ -1408,22 +1497,13 @@ async function editUsername(){
 }
 
 // ====== ADMIN ======
-function renderAdmin(){
-  document.getElementById('page').innerHTML=`
-  <div style="max-width:480px;margin:0 auto;margin-top:40px" class="fade-in">
-    <div class="card" style="text-align:center;border-color:rgba(139,92,246,.2)">
-      <div style="font-size:48px;margin-bottom:16px">🛡️</div>
-      <h1 style="font-size:22px;font-weight:800;color:#fff;margin-bottom:6px">Admin Panel</h1>
-      <p style="color:var(--muted);font-size:14px;margin-bottom:24px">Enter admin password to continue</p>
-      <input class="input" id="admin-pw" type="password" placeholder="Admin password" onkeydown="if(event.key==='Enter')checkAdmin()" style="margin-bottom:12px"/>
-      <button class="btn btn-primary" style="width:100%;padding:14px" onclick="checkAdmin()">Access Admin Panel</button>
-    </div>
-  </div>`;
-}
-
-async function checkAdmin(){
-  const pw=document.getElementById('admin-pw')?.value;
-  if(pw!==ADMIN_PASSWORD) return toast('Wrong password','error');
+async function renderAdmin(){
+  document.getElementById('page').innerHTML=`<div style="text-align:center;padding:40px"><div class="spinner"></div><p style="color:var(--muted);margin-top:12px">Verifying access...</p></div>`;
+  const ok=await isAdminUser(currentUser?.uid);
+  if(!ok){
+    document.getElementById('page').innerHTML=`<div style="text-align:center;padding:60px"><div style="font-size:64px;margin-bottom:16px">🚫</div><h2 style="color:#fff;margin-bottom:8px">Access Denied</h2><p style="color:var(--muted)">You do not have admin privileges.</p></div>`;
+    return;
+  }
   document.getElementById('page').innerHTML=`<div style="text-align:center;padding:40px"><div class="spinner"></div><p style="color:var(--muted);margin-top:12px">Loading admin data...</p></div>`;
   try{
     const snap=await firestore.collection('users').orderBy('xp','desc').limit(100).get();
@@ -1566,19 +1646,27 @@ document.addEventListener('click', e => {
   }
 });
 
-function showSettingsAuth() {
-  const userEmail = currentUser?.email || '';
-  // بريدك الشخصي فقط يفتح الإعدادات
-  if (userEmail === OWNER_EMAIL) {
-    renderSettings();
-  } else {
-    toast('هذه الصفحة للمالك فقط 🔒', 'error');
-  }
+async function showSettingsAuth() {
+  try{
+    const snap=await firestore.collection('config').doc('admins').get();
+    if(!snap.exists){
+      // First-time setup — no admins registered yet
+      if(confirm('No admin is configured yet.\nRegister your account as the first admin?')){
+        await firestore.collection('config').doc('admins').set({uids:[currentUser.uid]});
+        toast('✅ You are now the admin!');
+        renderSettings();
+      }
+      return;
+    }
+    const ok=(snap.data().uids||[]).includes(currentUser.uid);
+    if(ok){ renderSettings(); }
+    else{ toast('هذه الصفحة للمالك فقط 🔒','error'); }
+  }catch(e){ toast('Error checking admin access','error'); }
 }
 
 function renderSettings() {
   const currentKey = localStorage.getItem('pa_gemini_key') || GEMINI_KEY;
-  const masked = currentKey.substring(0, 8) + '••••••••••••••••••••' + currentKey.slice(-4);
+  const masked = currentKey ? (currentKey.substring(0,8)+'••••••••••••••••••••'+currentKey.slice(-4)) : '⚠️ Not set yet';
 
   const overlay = document.createElement('div');
   overlay.id = 'settings-page';
@@ -1643,25 +1731,27 @@ function renderSettings() {
             <p style="font-weight:600;color:#fff;font-size:14px">${currentUser?.displayName || 'Unknown'}</p>
             <p style="font-size:12px;color:#64748b">${currentUser?.email || ''}</p>
           </div>
-          ${currentUser?.email === OWNER_EMAIL ? '<span style="margin-left:auto;padding:3px 10px;background:rgba(139,92,246,.2);border:1px solid rgba(139,92,246,.3);border-radius:20px;font-size:11px;color:#a78bfa;font-weight:700">👑 Owner</span>' : ''}
+          <span style="margin-left:auto;padding:3px 10px;background:rgba(139,92,246,.2);border:1px solid rgba(139,92,246,.3);border-radius:20px;font-size:11px;color:#a78bfa;font-weight:700">👑 Admin</span>
         </div>
+        <p style="font-size:11px;color:#475569;margin-top:8px;font-family:'JetBrains Mono',monospace">UID: ${currentUser?.uid||''}</p>
       </div>
 
-      <!-- Reset -->
-      <button onclick="resetToDefaultKey()" 
+      <!-- Clear Key -->
+      <button onclick="clearGeminiKey()" 
         style="width:100%;padding:11px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:12px;color:#f87171;font-size:13px;cursor:pointer;font-weight:600">
-        🔄 إعادة للمفتاح الأصلي
+        🗑️ مسح المفتاح المحفوظ محلياً
       </button>
     </div>`;
   document.body.appendChild(overlay);
 }
 
-function saveGeminiKey() {
+async function saveGeminiKey() {
   const newKey = document.getElementById('new-gemini-key')?.value.trim();
   if (!newKey) return toast('الصق المفتاح أولاً', 'error');
   if (!newKey.startsWith('AIza')) return toast('المفتاح غير صحيح — يبدأ بـ AIza', 'error');
   localStorage.setItem('pa_gemini_key', newKey);
   GEMINI_KEY = newKey;
+  firestore.collection('config').doc('gemini').set({key:newKey}).catch(()=>{});
   toast('✅ تم حفظ المفتاح الجديد!');
   document.getElementById('settings-page')?.remove();
 }
@@ -1687,11 +1777,12 @@ async function testGeminiKey() {
   }
 }
 
-function resetToDefaultKey() {
+function clearGeminiKey() {
   localStorage.removeItem('pa_gemini_key');
-  GEMINI_KEY = "AIzaSyCQSgzd76tfk1Hg7W7LZteSfVndEoMKs7A";
-  toast('تم الإعادة للمفتاح الأصلي');
+  GEMINI_KEY = '';
+  toast('تم مسح المفتاح المحلي — سيُحمّل من Firestore');
   document.getElementById('settings-page')?.remove();
+  loadAppConfig();
 }
 </script>
 </body>
