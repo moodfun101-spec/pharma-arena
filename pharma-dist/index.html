@@ -1,0 +1,1676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="theme-color" content="#020817"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Pharma Arena"/>
+<meta name="description" content="Master Pharmacology Through AI-Powered Challenges"/>
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icon-192.png"/>
+<title>Pharma Arena 💊</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+<style>
+:root {
+  --bg: #020817;
+  --bg2: #0a1628;
+  --bg3: #0f2040;
+  --primary: #1991ff;
+  --primary2: #0074e4;
+  --cyan: #22d3ee;
+  --purple: #8b5cf6;
+  --glass: rgba(255,255,255,0.04);
+  --border: rgba(255,255,255,0.08);
+  --text: #e2e8f0;
+  --muted: #64748b;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+h1,h2,h3,h4{font-family:'Sora',sans-serif}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:#1991ff33;border-radius:2px}
+
+/* Utilities */
+.glass{background:var(--glass);backdrop-filter:blur(20px);border:1px solid var(--border)}
+.gradient-text{background:linear-gradient(135deg,var(--primary),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.mesh-bg{background:radial-gradient(at 40% 20%,rgba(25,145,255,.07) 0,transparent 50%),radial-gradient(at 80% 0%,rgba(139,92,246,.07) 0,transparent 50%),var(--bg)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 24px;border-radius:12px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:14px;cursor:pointer;border:none;transition:all .2s;text-decoration:none}
+.btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary2));color:#fff;box-shadow:0 4px 20px rgba(25,145,255,.3)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 30px rgba(25,145,255,.4)}
+.btn-secondary{background:var(--glass);color:var(--text);border:1px solid var(--border)}
+.btn-secondary:hover{background:rgba(255,255,255,.08)}
+.btn-danger{background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.input{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:12px;padding:12px 16px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:all .2s}
+.input:focus{border-color:rgba(25,145,255,.5);background:rgba(255,255,255,.07)}
+.input::placeholder{color:var(--muted)}
+.card{background:var(--glass);border:1px solid var(--border);border-radius:20px;padding:24px}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600}
+.progress-bar{height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--primary),var(--cyan));transition:width .7s ease}
+.spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.fade-in{animation:fadeIn .4s ease forwards}
+.slide-up{animation:slideUp .3s ease forwards}
+
+/* Layout */
+#app{display:flex;min-height:100vh}
+#sidebar{width:260px;flex-shrink:0;display:flex;flex-direction:column;background:rgba(10,22,40,.8);backdrop-filter:blur(20px);border-right:1px solid var(--border);position:fixed;top:0;left:0;height:100vh;z-index:100;overflow-y:auto;transition:transform .3s}
+#sidebar.hidden{transform:translateX(-100%)}
+#main{flex:1;margin-left:260px;min-height:100vh;transition:margin .3s}
+#main.full{margin-left:0}
+.mobile-header{display:none;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(10,22,40,.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50}
+.page-content{padding:32px;max-width:1100px;margin:0 auto}
+
+/* Sidebar */
+.sidebar-logo{padding:24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.logo-icon{width:40px;height:40px;background:linear-gradient(135deg,var(--primary),var(--cyan));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 4px 20px rgba(25,145,255,.3)}
+.logo-text{font-family:'Sora',sans-serif;font-weight:700;font-size:18px;color:#fff;line-height:1}
+.logo-sub{font-size:10px;color:var(--primary);letter-spacing:2px;font-weight:600}
+.user-card{margin:16px 12px;padding:16px;background:var(--glass);border:1px solid var(--border);border-radius:16px}
+.user-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--purple));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:#fff;flex-shrink:0}
+.nav-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;cursor:pointer;transition:all .2s;color:var(--muted);font-size:14px;font-weight:500;margin:2px 12px}
+.nav-item:hover{background:rgba(255,255,255,.05);color:#fff}
+.nav-item.active{background:rgba(25,145,255,.12);color:var(--primary);border:1px solid rgba(25,145,255,.25)}
+.nav-icon{font-size:18px;width:22px;text-align:center}
+.live-badge{margin-left:auto;background:rgba(239,68,68,.2);color:#f87171;border:1px solid rgba(239,68,68,.3);padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700}
+
+/* Auth Page */
+#auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(at 30% 20%,rgba(25,145,255,.1) 0,transparent 50%),radial-gradient(at 80% 80%,rgba(139,92,246,.1) 0,transparent 50%),var(--bg)}
+.auth-card{width:100%;max-width:420px;background:rgba(15,32,64,.8);backdrop-filter:blur(30px);border:1px solid var(--border);border-radius:28px;padding:36px}
+.auth-tabs{display:flex;background:var(--glass);border-radius:12px;padding:4px;margin-bottom:28px}
+.auth-tab{flex:1;padding:10px;border-radius:10px;text-align:center;cursor:pointer;font-size:14px;font-weight:600;color:var(--muted);transition:all .2s}
+.auth-tab.active{background:var(--primary);color:#fff;box-shadow:0 4px 15px rgba(25,145,255,.3)}
+.form-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:8px}
+
+/* Dashboard */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px}
+.stat-card{padding:20px;border-radius:16px;text-align:center}
+.stat-val{font-family:'Sora',sans-serif;font-size:24px;font-weight:700;margin-bottom:4px}
+.stat-label{font-size:12px;color:var(--muted)}
+.quick-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px}
+.quick-card{padding:24px;border-radius:20px;cursor:pointer;transition:all .3s;position:relative;overflow:hidden;border:1px solid var(--border);background:var(--glass)}
+.quick-card:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.2)}
+.quick-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:16px}
+.systems-mini{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+.system-mini-card{padding:16px 8px;border-radius:16px;text-align:center;cursor:pointer;transition:all .2s;border:1px solid var(--border);background:var(--glass)}
+.system-mini-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.2)}
+.system-icon-wrap{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:24px}
+
+/* Systems Page */
+.systems-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px}
+.system-card{padding:20px;border-radius:20px;cursor:pointer;transition:all .3s;border:1px solid var(--border);background:var(--glass)}
+.system-card:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.2);box-shadow:0 8px 30px rgba(0,0,0,.3)}
+
+/* Quiz */
+.quiz-container{max-width:720px;margin:0 auto}
+.quiz-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.timer-box{display:flex;align-items:center;gap:8px;padding:8px 18px;border-radius:12px;border:1px solid rgba(25,145,255,.3);background:rgba(25,145,255,.1);font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:600;color:var(--primary)}
+.timer-box.warning{border-color:rgba(239,68,68,.5);background:rgba(239,68,68,.1);color:#f87171;animation:pulse .5s ease infinite}
+.question-card{padding:32px;border-radius:24px;margin-bottom:20px;background:rgba(15,32,64,.6);border:1px solid var(--border)}
+.question-text{font-family:'Sora',sans-serif;font-size:20px;font-weight:600;color:#fff;line-height:1.5}
+.options-grid{display:flex;flex-direction:column;gap:12px;margin-bottom:20px}
+.option-btn{padding:16px 20px;border-radius:14px;cursor:pointer;transition:all .2s;border:1px solid var(--border);background:var(--glass);text-align:left;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;display:flex;align-items:center;gap:12px;width:100%}
+.option-btn:hover:not(:disabled){border-color:rgba(25,145,255,.4);background:rgba(25,145,255,.08)}
+.option-btn.correct{border-color:rgba(34,197,94,.6);background:rgba(34,197,94,.12);color:#86efac}
+.option-btn.wrong{border-color:rgba(239,68,68,.6);background:rgba(239,68,68,.12);color:#fca5a5}
+.option-btn.selected{border-color:rgba(25,145,255,.5);background:rgba(25,145,255,.1)}
+.option-key{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;background:rgba(255,255,255,.07);border:1px solid var(--border);flex-shrink:0}
+.explanation-box{padding:20px;border-radius:16px;background:rgba(15,32,64,.5);border:1px solid var(--border);margin-bottom:16px}
+.results-card{padding:40px;border-radius:28px;text-align:center;background:rgba(15,32,64,.7);border:1px solid var(--border)}
+
+/* Multiplayer */
+.mp-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px}
+.room-header{display:flex;align-items:center;justify-content:center;margin-bottom:24px}
+.room-code{font-family:'JetBrains Mono',monospace;font-size:48px;font-weight:700;color:#fff;letter-spacing:.2em}
+.players-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
+.player-slot{padding:16px;border-radius:16px;display:flex;align-items:center;gap:12px}
+.player-slot.filled{background:rgba(25,145,255,.08);border:1px solid rgba(25,145,255,.2)}
+.player-slot.empty{background:var(--glass);border:1px dashed var(--border)}
+.live-scores{display:flex;gap:10px;flex-wrap:wrap;padding:12px;border-radius:14px;background:var(--glass);border:1px solid var(--border);margin-bottom:16px}
+.live-score-item{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:10px;font-size:13px}
+
+/* Leaderboard */
+.lb-entry{display:flex;align-items:center;gap:16px;padding:14px 16px;border-radius:14px;margin-bottom:8px}
+.lb-rank{width:32px;text-align:center;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:14px;flex-shrink:0}
+.lb-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--purple));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px;color:#fff;flex-shrink:0}
+
+/* Tutor */
+.chat-container{display:flex;flex-direction:column;height:calc(100vh - 200px);min-height:400px}
+.messages{flex:1;overflow-y:auto;padding:8px 0;display:flex;flex-direction:column;gap:16px}
+.msg{display:flex;gap:12px;max-width:80%}
+.msg.user{flex-direction:row-reverse;align-self:flex-end}
+.msg-avatar{width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
+.msg-bot .msg-avatar{background:linear-gradient(135deg,var(--purple),#7c3aed)}
+.msg-user .msg-avatar{background:linear-gradient(135deg,var(--primary),var(--primary2))}
+.msg-bubble{padding:14px 18px;border-radius:18px;font-size:14px;line-height:1.6;max-width:100%}
+.msg-bot .msg-bubble{background:rgba(15,32,64,.7);border:1px solid var(--border);color:var(--text)}
+.msg-user .msg-bubble{background:linear-gradient(135deg,rgba(25,145,255,.7),rgba(0,116,228,.7));border:1px solid rgba(25,145,255,.3);color:#fff}
+.chat-input-row{display:flex;gap:10px;margin-top:12px}
+.typing-dots span{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--purple);margin:0 2px;animation:bounce .8s ease infinite}
+.typing-dots span:nth-child(2){animation-delay:.15s}
+.typing-dots span:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-8px)}}
+.drug-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.drug-info-block{padding:16px;border-radius:14px;background:var(--glass);border:1px solid var(--border)}
+.info-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+
+/* Profile */
+.rank-item{display:flex;align-items:center;gap:14px;padding:12px;border-radius:12px;margin-bottom:8px}
+.badge-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.badge-item{padding:16px;border-radius:14px;text-align:center;font-size:11px}
+
+/* Admin */
+.admin-table{width:100%;border-collapse:collapse}
+.admin-table th{text-align:left;padding:10px 14px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;border-bottom:1px solid var(--border)}
+.admin-table td{padding:12px 14px;font-size:13px;border-bottom:1px solid rgba(255,255,255,.04)}
+.admin-table tr:hover td{background:rgba(255,255,255,.02)}
+
+/* Responsive */
+@media(max-width:768px){
+  #sidebar{transform:translateX(-100%)}
+  #sidebar.open{transform:none}
+  #main{margin-left:0}
+  .mobile-header{display:flex}
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .quick-grid{grid-template-columns:1fr}
+  .systems-mini{grid-template-columns:repeat(3,1fr)}
+  .mp-grid{grid-template-columns:1fr}
+  .drug-info-grid{grid-template-columns:1fr}
+  .badge-grid{grid-template-columns:repeat(2,1fr)}
+  .page-content{padding:16px}
+  .systems-grid{grid-template-columns:1fr 1fr}
+  .question-text{font-size:16px}
+  .room-code{font-size:32px}
+}
+@media(min-width:769px){
+  .mobile-header{display:none}
+  .hamburger{display:none}
+}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);z-index:99}
+.overlay.open{display:block}
+select option{background:#0a1628;color:#e2e8f0}
+</style>
+</head>
+<body class="mesh-bg">
+
+<!-- Overlay for mobile -->
+<div id="overlay" class="overlay" onclick="closeSidebar()"></div>
+
+<!-- Sidebar -->
+<aside id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">💊</div>
+    <div>
+      <div class="logo-text">Pharma</div>
+      <div class="logo-sub">ARENA</div>
+    </div>
+  </div>
+  <div class="user-card">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div class="user-avatar" id="sb-avatar">P</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:14px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="sb-name">Loading...</div>
+        <div style="font-size:12px;color:var(--muted)" id="sb-rank">🌱 Novice</div>
+      </div>
+      <div style="font-size:12px;color:var(--primary);font-family:'JetBrains Mono',monospace;font-weight:600" id="sb-xp">0</div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="sb-xp-bar" style="width:0%"></div></div>
+  </div>
+  <nav style="padding:8px 0;flex:1">
+    <div class="nav-item active" onclick="navigate('dashboard')" id="nav-dashboard"><span class="nav-icon">🏠</span>Dashboard</div>
+    <div class="nav-item" onclick="navigate('systems')" id="nav-systems"><span class="nav-icon">🧬</span>Systems</div>
+    <div class="nav-item" onclick="navigate('multiplayer')" id="nav-multiplayer"><span class="nav-icon">⚔️</span>Arena<span class="live-badge">LIVE</span></div>
+    <div class="nav-item" onclick="navigate('leaderboard')" id="nav-leaderboard"><span class="nav-icon">🏆</span>Leaderboard</div>
+    <div class="nav-item" onclick="navigate('tutor')" id="nav-tutor"><span class="nav-icon">🤖</span>AI Tutor</div>
+    <div class="nav-item" onclick="navigate('profile')" id="nav-profile"><span class="nav-icon">👤</span>Profile</div>
+    <div class="nav-item" onclick="navigate('admin')" id="nav-admin" style="display:none"><span class="nav-icon">🛡️</span>Admin</div>
+  </nav>
+  <div style="padding:16px;border-top:1px solid var(--border)">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;text-align:center">
+      <div><div style="font-size:14px;font-weight:700;color:#fff;font-family:'JetBrains Mono',monospace" id="sb-acc">0%</div><div style="font-size:10px;color:var(--muted)">Accuracy</div></div>
+      <div><div style="font-size:14px;font-weight:700;color:#fff;font-family:'JetBrains Mono',monospace" id="sb-wins">0</div><div style="font-size:10px;color:var(--muted)">Wins</div></div>
+      <div><div style="font-size:14px;font-weight:700;color:#fff;font-family:'JetBrains Mono',monospace" id="sb-streak">0</div><div style="font-size:10px;color:var(--muted)">Streak</div></div>
+    </div>
+    <button class="btn btn-secondary" style="width:100%;font-size:13px;padding:10px" onclick="logout()">🚪 Sign Out</button>
+  </div>
+</aside>
+
+<!-- Main -->
+<main id="main" class="full">
+  <!-- Mobile Header -->
+  <div class="mobile-header">
+    <button onclick="openSidebar()" style="background:none;border:none;color:var(--text);cursor:pointer;font-size:22px">☰</button>
+    <div style="display:flex;align-items:center;gap:8px"><span>💊</span><span style="font-family:'Sora',sans-serif;font-weight:700;color:#fff">Pharma Arena</span></div>
+    <div style="font-size:12px;color:var(--primary);font-family:'JetBrains Mono',monospace" id="mob-xp">0 XP</div>
+  </div>
+
+  <div id="page" class="page-content"></div>
+</main>
+
+<!-- ============ SCRIPTS ============ -->
+<script>
+// ============================================================
+// CONFIG — Replace with your actual keys
+// ============================================================
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCdDxSNphNRNkMH4JLFTcnBJJnidBhseK8",
+  authDomain: "pharmaarina.firebaseapp.com",
+  databaseURL: "https://pharmaarina-default-rtdb.firebaseio.com",
+  projectId: "pharmaarina",
+  storageBucket: "pharmaarina.firebasestorage.app",
+  messagingSenderId: "44628967203",
+  appId: "1:44628967203:web:86d8480cb0a8c9a02f1696"
+};
+let GEMINI_KEY = localStorage.getItem("pa_gemini_key") || "AIzaSyCQSgzd76tfk1Hg7W7LZteSfVndEoMKs7A";
+const ADMIN_PASSWORD = "pharma2025admin";
+const OWNER_EMAIL = "father33223@gmail.com";
+const SETTINGS_PASSWORD = "ali@settings2025";
+// ============================================================
+
+// Register Service Worker (PWA)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+
+// Init Firebase
+firebase.initializeApp(FIREBASE_CONFIG);
+const auth = firebase.auth();
+const firestore = firebase.firestore();
+const rtdb = firebase.database();
+const googleProvider = new firebase.auth.GoogleAuthProvider();
+
+// ====== DATA ======
+const SYSTEMS = [
+  {id:"nervous",name:"Nervous System",icon:"🧠",color:"#6366f1",grad:"linear-gradient(135deg,#6366f1,#7c3aed)",desc:"CNS/PNS drugs, neurotransmitters, anesthetics"},
+  {id:"cardiovascular",name:"Cardiovascular",icon:"❤️",color:"#ef4444",grad:"linear-gradient(135deg,#ef4444,#be185d)",desc:"Heart drugs, antihypertensives, antiarrhythmics"},
+  {id:"respiratory",name:"Respiratory",icon:"🫁",color:"#06b6d4",grad:"linear-gradient(135deg,#06b6d4,#3b82f6)",desc:"Bronchodilators, corticosteroids, antitussives"},
+  {id:"gastrointestinal",name:"Gastrointestinal",icon:"🫃",color:"#f59e0b",grad:"linear-gradient(135deg,#f59e0b,#ea580c)",desc:"Antiulcer, antiemetics, laxatives, IBD drugs"},
+  {id:"endocrine",name:"Endocrine",icon:"⚗️",color:"#8b5cf6",grad:"linear-gradient(135deg,#8b5cf6,#a21caf)",desc:"Insulin, thyroid, steroids, hormones"},
+  {id:"renal",name:"Renal & Urinary",icon:"🫘",color:"#0ea5e9",grad:"linear-gradient(135deg,#0ea5e9,#2563eb)",desc:"Diuretics, renal protection, bladder drugs"},
+  {id:"hematology",name:"Hematology",icon:"🩸",color:"#dc2626",grad:"linear-gradient(135deg,#dc2626,#991b1b)",desc:"Anticoagulants, thrombolytics, anemia drugs"},
+  {id:"antibiotics",name:"Antibiotics",icon:"🦠",color:"#10b981",grad:"linear-gradient(135deg,#10b981,#0f766e)",desc:"Beta-lactams, aminoglycosides, macrolides"},
+  {id:"antifungals",name:"Antifungals",icon:"🍄",color:"#d97706",grad:"linear-gradient(135deg,#d97706,#92400e)",desc:"Azoles, polyenes, echinocandins"},
+  {id:"antivirals",name:"Antivirals",icon:"🔬",color:"#7c3aed",grad:"linear-gradient(135deg,#7c3aed,#4f46e5)",desc:"HIV, Hepatitis, Herpes, Influenza drugs"},
+  {id:"chemotherapy",name:"Chemotherapy",icon:"💊",color:"#0891b2",grad:"linear-gradient(135deg,#0891b2,#0f766e)",desc:"Cytotoxics, targeted therapy, immunotherapy"},
+  {id:"immunology",name:"Immunology",icon:"🛡️",color:"#059669",grad:"linear-gradient(135deg,#059669,#065f46)",desc:"Immunosuppressants, biologics, vaccines"},
+  {id:"analgesics",name:"Analgesics",icon:"💉",color:"#b45309",grad:"linear-gradient(135deg,#b45309,#92400e)",desc:"Opioids, NSAIDs, acetaminophen, adjuvants"},
+  {id:"anesthesia",name:"Anesthesia",icon:"😴",color:"#4338ca",grad:"linear-gradient(135deg,#4338ca,#1e3a8a)",desc:"General, regional, local anesthetics"},
+  {id:"toxicology",name:"Toxicology",icon:"☠️",color:"#6b7280",grad:"linear-gradient(135deg,#6b7280,#374151)",desc:"Antidotes, poisoning management"},
+  {id:"psychiatry",name:"Psychiatry",icon:"🧬",color:"#9333ea",grad:"linear-gradient(135deg,#9333ea,#7e22ce)",desc:"Antipsychotics, antidepressants, mood stabilizers"},
+  {id:"musculoskeletal",name:"Musculoskeletal",icon:"🦴",color:"#92400e",grad:"linear-gradient(135deg,#92400e,#78350f)",desc:"Muscle relaxants, gout, osteoporosis"},
+  {id:"dermatology",name:"Dermatology",icon:"🩹",color:"#be185d",grad:"linear-gradient(135deg,#be185d,#9f1239)",desc:"Topical drugs, acne, psoriasis"},
+  {id:"ophthalmology",name:"Ophthalmology",icon:"👁️",color:"#0284c7",grad:"linear-gradient(135deg,#0284c7,#1e40af)",desc:"Glaucoma, dry eye, ocular infections"},
+  {id:"emergency",name:"Emergency Drugs",icon:"🚨",color:"#dc2626",grad:"linear-gradient(135deg,#dc2626,#ea580c)",desc:"ACLS drugs, antidotes, shock management"}
+];
+
+const RANKS=[
+  {name:"Novice",minXP:0,badge:"🌱"},
+  {name:"Learner",minXP:200,badge:"📖"},
+  {name:"Student",minXP:600,badge:"🎓"},
+  {name:"Resident",minXP:1500,badge:"🏥"},
+  {name:"Clinician",minXP:4000,badge:"💊"},
+  {name:"Expert",minXP:8000,badge:"⚡"},
+  {name:"Clinical Master",minXP:15000,badge:"🏆"},
+  {name:"Pharma Legend",minXP:30000,badge:"👑"}
+];
+
+const LEVELS=["beginner","intermediate","advanced","expert","master"];
+const LEVEL_ICONS=["🌱","📚","⚡","🏆","👨‍⚕️"];
+
+function getRank(xp){
+  let r=RANKS[0];
+  for(const rk of RANKS){if(xp>=rk.minXP)r=rk;else break;}
+  return r;
+}
+
+// ====== STATE ======
+let currentUser=null, userProfile=null, currentPage='dashboard';
+let quizState={}, multiState={}, chatMessages=[], roomListener=null;
+
+// ====== AUTH LISTENERS ======
+// Show auth immediately, Firebase will override if logged in
+document.getElementById('main').classList.add('full');
+setTimeout(()=>{ if(!document.getElementById('auth-page')) renderAuth(); }, 500);
+
+auth.onAuthStateChanged(async u=>{
+  if(u){
+    currentUser=u;
+    await loadProfile(u.uid);
+    showApp();
+    navigate('dashboard');
+  } else {
+    currentUser=null;
+    userProfile=null;
+    showAuth();
+  }
+});
+
+async function loadProfile(uid){
+  const snap = await firestore.collection('users').doc(uid).get();
+  if(snap.exists) userProfile=snap.data();
+  else userProfile={uid,xp:0,totalCorrect:0,totalAnswered:0,wins:0,losses:0,streak:0,badges:[]};
+  updateSidebar();
+}
+
+function updateSidebar(){
+  if(!currentUser||!userProfile) return;
+  const name = currentUser.displayName||'Pharmacist';
+  const xp = userProfile.xp||0;
+  const rank = getRank(xp);
+  const acc = userProfile.totalAnswered ? Math.round((userProfile.totalCorrect/userProfile.totalAnswered)*100) : 0;
+  const nextRank = RANKS.find(r=>r.minXP>xp);
+  const curRank = RANKS.filter(r=>r.minXP<=xp).pop()||RANKS[0];
+  const pct = nextRank ? ((xp-curRank.minXP)/(nextRank.minXP-curRank.minXP))*100 : 100;
+
+  document.getElementById('sb-avatar').textContent = name[0].toUpperCase();
+  document.getElementById('sb-name').textContent = name;
+  document.getElementById('sb-rank').textContent = `${rank.badge} ${rank.name}`;
+  document.getElementById('sb-xp').textContent = xp.toLocaleString()+' XP';
+  document.getElementById('sb-xp-bar').style.width = Math.min(pct,100)+'%';
+  document.getElementById('sb-acc').textContent = acc+'%';
+  document.getElementById('sb-wins').textContent = userProfile.wins||0;
+  document.getElementById('sb-streak').textContent = userProfile.streak||0;
+  document.getElementById('mob-xp').textContent = xp.toLocaleString()+' XP';
+}
+
+async function addXP(amount, action){
+  if(!currentUser||!userProfile) return;
+  const updates={xp:(userProfile.xp||0)+amount};
+  if(action==='correct'){updates.totalCorrect=(userProfile.totalCorrect||0)+1;updates.totalAnswered=(userProfile.totalAnswered||0)+1;}
+  else if(action==='wrong'){updates.totalAnswered=(userProfile.totalAnswered||0)+1;}
+  else if(action==='win'){updates.wins=(userProfile.wins||0)+1;}
+  else if(action==='loss'){updates.losses=(userProfile.losses||0)+1;}
+  Object.assign(userProfile,updates);
+  await firestore.collection('users').doc(currentUser.uid).update(updates);
+  updateSidebar();
+}
+
+// ====== NAVIGATION ======
+function showApp(){
+  document.getElementById('sidebar').classList.remove('hidden');
+  document.getElementById('main').classList.remove('full');
+}
+function showAuth(){
+  document.getElementById('sidebar').classList.add('hidden');
+  document.getElementById('main').classList.add('full');
+  renderAuth();
+}
+function openSidebar(){
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+}
+function navigate(page){
+  currentPage=page;
+  closeSidebar();
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  const nav=document.getElementById('nav-'+page);
+  if(nav) nav.classList.add('active');
+  const renders={dashboard:renderDashboard,systems:renderSystems,multiplayer:renderMultiplayer,leaderboard:renderLeaderboard,tutor:renderTutor,profile:renderProfile,admin:renderAdmin};
+  if(renders[page]) renders[page]();
+}
+
+// ====== AUTH RENDERS ======
+function renderAuth(mode='login'){
+  document.getElementById('page').innerHTML=`
+  <div id="auth-page">
+    <div class="auth-card fade-in">
+      <div style="text-align:center;margin-bottom:28px">
+        <div style="width:64px;height:64px;background:linear-gradient(135deg,var(--primary),var(--cyan));border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 16px;box-shadow:0 8px 30px rgba(25,145,255,.3)">💊</div>
+        <h1 style="font-size:28px;font-weight:800;color:#fff">Pharma Arena</h1>
+        <p style="color:var(--muted);font-size:13px;margin-top:4px">Master Pharmacology with AI</p>
+      </div>
+      <div class="auth-tabs" id="auth-tabs">
+        <div class="auth-tab ${mode==='login'?'active':''}" onclick="renderAuth('login')">Sign In</div>
+        <div class="auth-tab ${mode==='signup'?'active':''}" onclick="renderAuth('signup')">Sign Up</div>
+      </div>
+      ${mode==='login'?`
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div><label class="form-label">Email</label><input class="input" id="auth-email" type="email" placeholder="you@example.com"/></div>
+        <div><label class="form-label">Password</label><input class="input" id="auth-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+        <button class="btn btn-primary" style="width:100%;padding:14px;margin-top:4px" onclick="doLogin()">Sign In</button>
+        <div style="display:flex;align-items:center;gap:10px;margin:4px 0"><div style="flex:1;height:1px;background:var(--border)"></div><span style="font-size:12px;color:var(--muted)">OR</span><div style="flex:1;height:1px;background:var(--border)"></div></div>
+        <button class="btn btn-secondary" style="width:100%;padding:12px" onclick="doGoogle()">
+          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Continue with Google
+        </button>
+        <p style="text-align:center;font-size:13px"><a href="#" onclick="renderAuth('reset')" style="color:var(--primary)">Forgot password?</a></p>
+      </div>
+      `:`
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div><label class="form-label">Username</label><input class="input" id="auth-name" type="text" placeholder="Your display name"/></div>
+        <div><label class="form-label">Email</label><input class="input" id="auth-email" type="email" placeholder="you@example.com"/></div>
+        <div><label class="form-label">Password (min 6 chars)</label><input class="input" id="auth-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doSignup()"/></div>
+        <button class="btn btn-primary" style="width:100%;padding:14px;margin-top:4px" onclick="doSignup()">Create Account</button>
+        <div style="display:flex;align-items:center;gap:10px;margin:4px 0"><div style="flex:1;height:1px;background:var(--border)"></div><span style="font-size:12px;color:var(--muted)">OR</span><div style="flex:1;height:1px;background:var(--border)"></div></div>
+        <button class="btn btn-secondary" style="width:100%;padding:12px" onclick="doGoogle()">
+          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Continue with Google
+        </button>
+      </div>
+      `}
+    </div>
+  </div>`;
+}
+
+async function doLogin(){
+  const email=(document.getElementById('auth-email')?.value||'').trim();
+  const pass=document.getElementById('auth-pass')?.value||'';
+  if(!email||!pass) return toast('Please fill all fields','error');
+  try{
+    await auth.signInWithEmailAndPassword(email,pass);
+  } catch(e){
+    const msg=e.code==='auth/user-not-found'?'No account found'
+      :e.code==='auth/wrong-password'?'Wrong password'
+      :e.code==='auth/invalid-credential'?'Incorrect email or password'
+      :e.code==='auth/invalid-email'?'Invalid email format'
+      :e.message;
+    toast(msg,'error');
+  }
+}
+async function doSignup(){
+  const name=(document.getElementById('auth-name')?.value||'').trim();
+  const email=(document.getElementById('auth-email')?.value||'').trim();
+  const pass=document.getElementById('auth-pass')?.value||'';
+  if(!name) return toast('Please enter a username','error');
+  if(!email) return toast('Please enter your email','error');
+  if(!pass||pass.length<6) return toast('Password must be at least 6 characters','error');
+  try{
+    const cred=await auth.createUserWithEmailAndPassword(email,pass);
+    await cred.user.updateProfile({displayName:name});
+    await firestore.collection('users').doc(cred.user.uid).set({
+      uid:cred.user.uid,username:name,email,xp:0,totalCorrect:0,
+      totalAnswered:0,wins:0,losses:0,streak:0,badges:[],
+      createdAt:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    toast('Welcome to Pharma Arena! 🎉');
+  } catch(e){
+    const msg=e.code==='auth/email-already-in-use'?'Email already registered'
+      :e.code==='auth/weak-password'?'Password too weak'
+      :e.code==='auth/invalid-email'?'Invalid email format'
+      :e.message;
+    toast(msg,'error');
+  }
+}
+async function doGoogle(){
+  try{
+    const cred=await auth.signInWithPopup(googleProvider);
+    const snap=await firestore.collection('users').doc(cred.user.uid).get();
+    if(!snap.exists){
+      await firestore.collection('users').doc(cred.user.uid).set({
+        uid:cred.user.uid,username:cred.user.displayName,email:cred.user.email,xp:0,totalCorrect:0,totalAnswered:0,wins:0,losses:0,streak:0,badges:[],createdAt:firebase.firestore.FieldValue.serverTimestamp()
+      });
+    }
+    toast('Welcome! 🎉');
+  } catch(e){ toast('Google sign-in failed','error'); }
+}
+async function logout(){
+  await auth.signOut();
+  toast('Signed out');
+}
+
+// ====== DASHBOARD ======
+function renderDashboard(){
+  const xp=userProfile?.xp||0, rank=getRank(xp);
+  const acc=userProfile?.totalAnswered?Math.round((userProfile.totalCorrect/userProfile.totalAnswered)*100):0;
+  document.getElementById('page').innerHTML=`
+  <div class="fade-in">
+    <div class="card" style="margin-bottom:28px;position:relative;overflow:hidden">
+      <div style="position:absolute;top:-40px;right:-40px;width:200px;height:200px;background:radial-gradient(circle,rgba(25,145,255,.1),transparent);border-radius:50%"></div>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:6px">${new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}</p>
+      <h1 style="font-size:28px;font-weight:800;color:#fff;margin-bottom:6px">Welcome back, <span class="gradient-text">${currentUser?.displayName?.split(' ')[0]||'Doctor'}</span> 👋</h1>
+      <p style="color:var(--muted);font-size:14px">Rank: <strong style="color:#fff">${rank.badge} ${rank.name}</strong> · ${userProfile?.totalAnswered||0} questions answered</p>
+    </div>
+    <div class="stats-grid" style="margin-bottom:28px">
+      <div class="stat-card" style="background:rgba(25,145,255,.08);border:1px solid rgba(25,145,255,.2)"><div class="stat-val" style="color:var(--primary)">${xp.toLocaleString()}</div><div class="stat-label">Total XP</div></div>
+      <div class="stat-card" style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2)"><div class="stat-val" style="color:#4ade80">${acc}%</div><div class="stat-label">Accuracy</div></div>
+      <div class="stat-card" style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2)"><div class="stat-val" style="color:#fbbf24">${userProfile?.wins||0}</div><div class="stat-label">Arena Wins</div></div>
+      <div class="stat-card" style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2)"><div class="stat-val" style="color:#f87171">${userProfile?.streak||0}</div><div class="stat-label">Streak</div></div>
+    </div>
+    <div class="quick-grid" style="margin-bottom:28px">
+      <div class="quick-card" onclick="navigate('systems')"><div class="quick-icon" style="background:linear-gradient(135deg,var(--primary),var(--cyan))">📚</div><h3 style="font-size:16px;font-weight:700;color:#fff;margin-bottom:4px">Start Quiz</h3><p style="font-size:13px;color:var(--muted)">AI-generated questions</p></div>
+      <div class="quick-card" onclick="navigate('multiplayer')"><div class="quick-icon" style="background:linear-gradient(135deg,#ef4444,#be185d)">⚔️</div><h3 style="font-size:16px;font-weight:700;color:#fff;margin-bottom:4px">Enter Arena</h3><p style="font-size:13px;color:var(--muted)">Live multiplayer battle</p></div>
+      <div class="quick-card" onclick="navigate('tutor')"><div class="quick-icon" style="background:linear-gradient(135deg,var(--purple),#7c3aed)">🤖</div><h3 style="font-size:16px;font-weight:700;color:#fff;margin-bottom:4px">AI Tutor</h3><p style="font-size:13px;color:var(--muted)">Instant pharmacology help</p></div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h2 style="font-size:18px;font-weight:700;color:#fff">Body Systems</h2>
+      <span onclick="navigate('systems')" style="font-size:13px;color:var(--primary);cursor:pointer">View all →</span>
+    </div>
+    <div class="systems-mini">
+      ${SYSTEMS.slice(0,6).map(s=>`
+      <div class="system-mini-card" onclick="startQuizFor('${s.id}')">
+        <div class="system-icon-wrap" style="background:${s.grad}">${s.icon}</div>
+        <div style="font-size:11px;font-weight:600;color:var(--text);line-height:1.3">${s.name}</div>
+      </div>`).join('')}
+    </div>
+    <div class="card" style="margin-top:24px;border-color:rgba(245,158,11,.2);background:rgba(245,158,11,.05)">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px">
+        <div style="display:flex;align-items:center;gap:14px">
+          <div style="width:48px;height:48px;background:linear-gradient(135deg,#f59e0b,#ea580c);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 4px 20px rgba(245,158,11,.3);flex-shrink:0">🏆</div>
+          <div><h3 style="font-weight:700;color:#fff;margin-bottom:2px">Daily Challenge</h3><p style="font-size:13px;color:var(--muted)">Complete today's challenge for bonus XP!</p></div>
+        </div>
+        <button class="btn btn-primary" style="flex-shrink:0" onclick="navigate('systems')">Start</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ====== SYSTEMS ======
+function renderSystems(){
+  document.getElementById('page').innerHTML=`
+  <div class="fade-in">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div><h1 style="font-size:26px;font-weight:800;color:#fff">Body Systems</h1><p style="color:var(--muted);font-size:14px;margin-top:4px">Select a system to start learning</p></div>
+      <span class="badge" style="background:rgba(25,145,255,.12);border:1px solid rgba(25,145,255,.25);color:var(--primary)">${SYSTEMS.length} Systems</span>
+    </div>
+    <input class="input" placeholder="🔍 Search systems..." oninput="filterSystems(this.value)" style="margin-bottom:20px"/>
+    <div class="systems-grid" id="systems-grid">
+      ${SYSTEMS.map(s=>`
+      <div class="system-card" onclick="startQuizFor('${s.id}')">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
+          <div style="width:56px;height:56px;border-radius:16px;background:${s.grad};display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 4px 20px rgba(0,0,0,.3)">${s.icon}</div>
+          <span style="color:var(--muted);font-size:18px">›</span>
+        </div>
+        <h3 style="font-weight:700;color:#fff;margin-bottom:6px;font-size:15px">${s.name}</h3>
+        <p style="font-size:12px;color:var(--muted);line-height:1.5">${s.desc}</p>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function filterSystems(q){
+  const grid=document.getElementById('systems-grid');
+  const filtered=SYSTEMS.filter(s=>s.name.toLowerCase().includes(q.toLowerCase())||s.desc.toLowerCase().includes(q.toLowerCase()));
+  grid.innerHTML=filtered.map(s=>`
+  <div class="system-card" onclick="startQuizFor('${s.id}')">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
+      <div style="width:56px;height:56px;border-radius:16px;background:${s.grad};display:flex;align-items:center;justify-content:center;font-size:26px">${s.icon}</div>
+      <span style="color:var(--muted);font-size:18px">›</span>
+    </div>
+    <h3 style="font-weight:700;color:#fff;margin-bottom:6px;font-size:15px">${s.name}</h3>
+    <p style="font-size:12px;color:var(--muted);line-height:1.5">${s.desc}</p>
+  </div>`).join('')||'<p style="color:var(--muted);padding:20px">No systems found</p>';
+}
+
+// ====== QUIZ ======
+function startQuizFor(systemId){
+  const sys=SYSTEMS.find(s=>s.id===systemId);
+  document.getElementById('page').innerHTML=`
+  <div class="quiz-container fade-in">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
+      <span onclick="navigate('systems')" style="cursor:pointer;color:var(--muted);font-size:14px">← Back</span>
+    </div>
+    <div class="card" style="border:1px solid ${sys.color}33">
+      <div style="width:80px;height:80px;border-radius:24px;background:${sys.grad};display:flex;align-items:center;justify-content:center;font-size:40px;margin-bottom:20px;box-shadow:0 8px 30px rgba(0,0,0,.3)">${sys.icon}</div>
+      <h1 style="font-size:24px;font-weight:800;color:#fff;margin-bottom:6px">${sys.name}</h1>
+      <p style="color:var(--muted);margin-bottom:24px;font-size:14px">${sys.desc}</p>
+      <div style="margin-bottom:20px">
+        <label class="form-label">Difficulty Level</label>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
+          ${LEVELS.map((l,i)=>`<button onclick="selectLevel(this,'${l}')" class="btn btn-secondary" style="padding:10px 6px;font-size:11px;flex-direction:column;gap:4px;border-radius:12px;${i===0?'border-color:rgba(25,145,255,.5);background:rgba(25,145,255,.1);color:var(--primary)':''}">${LEVEL_ICONS[i]}<span>${l[0].toUpperCase()+l.slice(1)}</span></button>`).join('')}
+        </div>
+      </div>
+      <div style="margin-bottom:24px">
+        <label class="form-label">Question Type</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          ${[['MCQ','📋','Multiple Choice'],['TrueFalse','✅','True/False'],['CaseStudy','🏥','Clinical Cases']].map((t,i)=>`<button onclick="selectType(this,'${t[0]}')" class="btn btn-secondary" style="padding:12px 8px;flex-direction:column;gap:6px;border-radius:12px;${i===0?'border-color:rgba(6,182,212,.5);background:rgba(6,182,212,.08);color:var(--cyan)':''}">${t[1]}<span style="font-size:11px">${t[2]}</span></button>`).join('')}
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;padding:16px;font-size:15px" onclick="launchQuiz('${systemId}')">🧠 Start AI Quiz</button>
+    </div>
+  </div>`;
+  quizState={systemId,level:'beginner',type:'MCQ'};
+}
+
+function selectLevel(el,level){
+  document.querySelectorAll('[onclick^="selectLevel"]').forEach(b=>{b.style.borderColor='';b.style.background='';b.style.color='';});
+  el.style.borderColor='rgba(25,145,255,.5)';el.style.background='rgba(25,145,255,.1)';el.style.color='var(--primary)';
+  quizState.level=level;
+}
+function selectType(el,type){
+  document.querySelectorAll('[onclick^="selectType"]').forEach(b=>{b.style.borderColor='';b.style.background='';b.style.color='';});
+  el.style.borderColor='rgba(6,182,212,.5)';el.style.background='rgba(6,182,212,.08)';el.style.color='var(--cyan)';
+  quizState.type=type;
+}
+
+async function launchQuiz(systemId){
+  const sys=SYSTEMS.find(s=>s.id===systemId);
+  document.getElementById('page').innerHTML=`
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:50vh;gap:20px">
+    <div style="position:relative;width:80px;height:80px">
+      <div style="position:absolute;inset:0;border-radius:50%;border:3px solid rgba(25,145,255,.2)"></div>
+      <div style="position:absolute;inset:0;border-radius:50%;border:3px solid transparent;border-top-color:var(--primary);animation:spin .8s linear infinite"></div>
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:32px">${sys.icon}</div>
+    </div>
+    <div style="text-align:center"><h2 style="font-size:20px;font-weight:700;color:#fff;margin-bottom:8px">Generating Questions...</h2><p style="color:var(--muted);font-size:14px">Gemini AI is crafting your quiz</p></div>
+  </div>`;
+  try{
+    const qs=await geminiGenerateQuiz(sys.name,quizState.level,quizState.type,10);
+    quizState={...quizState,questions:qs,current:0,score:0,results:[],earned:0,streak:0};
+    renderQuestion();
+  } catch(e){
+    toast('Failed to generate questions. Check your Gemini API key.','error');
+    startQuizFor(systemId);
+  }
+}
+
+function renderQuestion(){
+  const {questions,current,score,earned,streak}=quizState;
+  const q=questions[current];
+  const pct=(current/questions.length)*100;
+  const sys=SYSTEMS.find(s=>s.id===quizState.systemId);
+  document.getElementById('page').innerHTML=`
+  <div class="quiz-container fade-in">
+    <div class="quiz-header">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:22px">${sys?.icon}</span>
+        <div><p style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">${sys?.name}</p><p style="font-size:13px;font-weight:600;color:#fff">Q ${current+1} / ${questions.length}</p></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px">
+        ${streak>=3?`<span style="color:#fb923c;font-size:14px;font-weight:700">🔥 ${streak}</span>`:''}
+        <div class="timer-box" id="timer-box">⏱ <span id="timer-val">30</span>s</div>
+      </div>
+    </div>
+    <div class="progress-bar" style="margin-bottom:16px"><div class="progress-fill" style="width:${pct}%"></div></div>
+    <div style="display:flex;gap:16px;margin-bottom:16px;font-size:13px">
+      <span style="color:#4ade80">✓ ${score} correct</span>
+      <span style="color:var(--primary)">+${earned} XP</span>
+    </div>
+    <div class="question-card">
+      ${q.type==='CaseStudy'?`<div style="background:rgba(6,182,212,.06);border:1px solid rgba(6,182,212,.2);border-radius:12px;padding:16px;margin-bottom:16px"><p style="font-size:11px;color:var(--cyan);font-weight:700;text-transform:uppercase;margin-bottom:8px">Clinical Case</p>${q.patient?`<p style="font-size:13px;color:var(--text);margin-bottom:6px"><span style="color:var(--muted)">Patient:</span> ${q.patient}</p>`:''}${q.presentation?`<p style="font-size:13px;color:var(--text)"><span style="color:var(--muted)">Presentation:</span> ${q.presentation}</p>`:''}</div>`:''}
+      <p class="question-text">${q.question||q.title}</p>
+    </div>
+    <div class="options-grid" id="options">${renderOptions(q)}</div>
+    <div id="explanation-area"></div>
+    <div id="next-btn-area"></div>
+  </div>`;
+  startTimer(30);
+}
+
+function renderOptions(q){
+  return (q.options||[]).map((opt,i)=>{
+    const key=['A','B','C','D'][i]||opt;
+    return `<button class="option-btn" onclick="selectAnswer('${key}','${key===opt?opt:key}')" id="opt-${key}">
+      <span class="option-key">${['A','B','C','D'][i]||((i===0)?'T':'F')}</span>
+      <span>${opt}</span>
+    </button>`;
+  }).join('');
+}
+
+let timerInterval=null;
+function startTimer(sec){
+  clearInterval(timerInterval);
+  let t=sec;
+  document.getElementById('timer-val').textContent=t;
+  timerInterval=setInterval(()=>{
+    t--;
+    const el=document.getElementById('timer-val');
+    const box=document.getElementById('timer-box');
+    if(!el){clearInterval(timerInterval);return;}
+    el.textContent=t;
+    if(t<=10&&box){box.classList.add('warning');}
+    if(t<=0){clearInterval(timerInterval);selectAnswer(null,null);}
+  },1000);
+}
+
+async function selectAnswer(key,opt){
+  clearInterval(timerInterval);
+  const q=quizState.questions[quizState.current];
+  const isCorrect=key===q.correct||opt===q.correct;
+  const xp=isCorrect?10:2;
+  const newStreak=isCorrect?quizState.streak+1:0;
+  let bonus=0;
+  if(newStreak===5)bonus=25;
+  if(newStreak===10)bonus=50;
+  quizState.streak=newStreak;
+  quizState.earned=(quizState.earned||0)+xp+bonus;
+  quizState.results=[...quizState.results,{q,selected:key,correct:isCorrect}];
+  if(isCorrect) quizState.score++;
+
+  // Visual feedback
+  document.querySelectorAll('.option-btn').forEach(b=>b.disabled=true);
+  const correctKey=q.correct;
+  const correctBtn=document.getElementById('opt-'+correctKey);
+  if(correctBtn) correctBtn.classList.add('correct');
+  if(key&&key!==q.correct){
+    const wrongBtn=document.getElementById('opt-'+key);
+    if(wrongBtn) wrongBtn.classList.add('wrong');
+  }
+
+  await addXP(xp+bonus, isCorrect?'correct':'wrong');
+  if(isCorrect) toast(newStreak>=3?`🔥 ${newStreak} streak! +${xp+bonus} XP`:`Correct! +${xp} XP`);
+  else toast(key?'Wrong answer':'⏰ Time\'s up!','error');
+
+  const expArea=document.getElementById('explanation-area');
+  if(expArea&&q.explanation){
+    expArea.innerHTML=`<div class="explanation-box slide-up"><p style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:8px">Explanation</p><p style="font-size:13px;color:var(--text);line-height:1.6">${q.explanation}</p></div>`;
+  }
+  const nextArea=document.getElementById('next-btn-area');
+  if(nextArea){
+    nextArea.innerHTML=`<button class="btn btn-primary" style="width:100%;padding:14px;font-size:15px" onclick="nextQuestion()">${quizState.current+1>=quizState.questions.length?'📊 View Results':'Next Question →'}</button>`;
+  }
+}
+
+function nextQuestion(){
+  if(quizState.current+1>=quizState.questions.length){
+    renderQuizResults();
+  } else {
+    quizState.current++;
+    renderQuestion();
+  }
+}
+
+async function renderQuizResults(){
+  await addXP(30,'complete');
+  const {score,questions,earned,results}=quizState;
+  const pct=Math.round((score/questions.length)*100);
+  const emoji=pct>=90?'🏆':pct>=75?'⭐':pct>=60?'👍':'📚';
+  const grade=pct>=90?'Excellent!':pct>=75?'Great Job!':pct>=60?'Good Effort':'Keep Studying';
+  const sys=SYSTEMS.find(s=>s.id===quizState.systemId);
+  document.getElementById('page').innerHTML=`
+  <div class="quiz-container fade-in">
+    <div class="results-card" style="margin-bottom:24px">
+      <div style="font-size:64px;margin-bottom:16px">${emoji}</div>
+      <h2 style="font-size:32px;font-weight:800;color:#fff;margin-bottom:8px">${grade}</h2>
+      <p style="color:var(--muted);margin-bottom:28px">${sys?.name} · ${quizState.level} level</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:28px">
+        <div class="card"><div style="font-size:28px;font-weight:800;font-family:'Sora',sans-serif;color:#fff;margin-bottom:4px">${pct}%</div><div style="font-size:12px;color:var(--muted)">Score</div></div>
+        <div class="card"><div style="font-size:28px;font-weight:800;font-family:'Sora',sans-serif;color:#4ade80;margin-bottom:4px">${score}/${questions.length}</div><div style="font-size:12px;color:var(--muted)">Correct</div></div>
+        <div class="card"><div style="font-size:28px;font-weight:800;font-family:'Sora',sans-serif;color:var(--primary);margin-bottom:4px">+${earned}</div><div style="font-size:12px;color:var(--muted)">XP</div></div>
+      </div>
+      <div style="display:flex;gap:12px">
+        <button class="btn btn-secondary" style="flex:1" onclick="startQuizFor('${quizState.systemId}')">🔄 Try Again</button>
+        <button class="btn btn-primary" style="flex:1" onclick="navigate('systems')">All Systems</button>
+      </div>
+    </div>
+    <h3 style="font-size:18px;font-weight:700;color:#fff;margin-bottom:14px">Review Answers</h3>
+    ${results.map((r,i)=>`
+    <div class="card" style="margin-bottom:10px;border-color:${r.correct?'rgba(34,197,94,.2)':'rgba(239,68,68,.2)'}">
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <span style="font-size:18px;flex-shrink:0">${r.correct?'✅':'❌'}</span>
+        <div style="flex:1">
+          <p style="font-size:14px;font-weight:600;color:#fff;margin-bottom:6px;line-height:1.4">${r.q.question||r.q.title}</p>
+          ${!r.correct?`<p style="font-size:12px;color:var(--muted)">Your answer: <span style="color:#f87171">${r.selected||'No answer'}</span></p>`:''}
+          <p style="font-size:12px;color:var(--muted)">Correct: <span style="color:#4ade80">${r.q.correct}</span></p>
+          ${r.q.explanation?`<p style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5">${r.q.explanation}</p>`:''}
+        </div>
+      </div>
+    </div>`).join('')}
+  </div>`;
+}
+
+// ====== MULTIPLAYER ======
+function renderMultiplayer(){
+  multiState={};
+  if(roomListener){roomListener();roomListener=null;}
+  document.getElementById('page').innerHTML=`
+  <div class="fade-in">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px">
+      <h1 style="font-size:26px;font-weight:800;color:#fff">⚔️ Pharma Arena</h1>
+    </div>
+    <div class="mp-grid">
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+          <div style="width:48px;height:48px;background:linear-gradient(135deg,var(--primary),var(--cyan));border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px">➕</div>
+          <div><h2 style="font-weight:700;color:#fff">Create Room</h2><p style="font-size:12px;color:var(--muted)">Host a battle</p></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div><label class="form-label">Body System</label>
+            <select class="input" id="mp-system">${SYSTEMS.map(s=>`<option value="${s.id}">${s.icon} ${s.name}</option>`).join('')}</select>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div><label class="form-label">Difficulty</label>
+              <select class="input" id="mp-level">${LEVELS.map((l,i)=>`<option value="${l}">${LEVEL_ICONS[i]} ${l[0].toUpperCase()+l.slice(1)}</option>`).join('')}</select>
+            </div>
+            <div><label class="form-label">Questions</label>
+              <select class="input" id="mp-count">${[5,10,15,20].map(n=>`<option value="${n}">${n}</option>`).join('')}</select>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div><label class="form-label">Time/Q (sec)</label>
+              <select class="input" id="mp-time">${[10,15,20,30,45].map(n=>`<option value="${n}">${n}s</option>`).join('')}</select>
+            </div>
+            <div><label class="form-label">Max Players</label>
+              <select class="input" id="mp-max">${[2,3,4,6,8].map(n=>`<option value="${n}">${n}</option>`).join('')}</select>
+            </div>
+          </div>
+          <button class="btn btn-primary" style="width:100%;padding:14px" onclick="createRoom()">Create Battle Room</button>
+        </div>
+      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+          <div style="width:48px;height:48px;background:linear-gradient(135deg,#10b981,#0f766e);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px">🚪</div>
+          <div><h2 style="font-weight:700;color:#fff">Join Room</h2><p style="font-size:12px;color:var(--muted)">Enter a room code</p></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div><label class="form-label">Room Code</label>
+            <input class="input" id="join-code" placeholder="e.g. AB12CD" style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;letter-spacing:.2em" maxlength="6" oninput="this.value=this.value.toUpperCase()"/>
+          </div>
+          <button class="btn" style="width:100%;padding:14px;background:linear-gradient(135deg,#10b981,#0f766e);color:#fff;font-weight:600" onclick="joinRoom()">Join Battle</button>
+          <div class="card" style="padding:16px">
+            <p style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:10px">How It Works</p>
+            ${['Host creates room with settings','Share the code with friends','Answer faster = more points','Top scorer wins arena XP!'].map((t,i)=>`<div style="display:flex;gap:8px;margin-bottom:8px"><span style="width:20px;height:20px;background:rgba(25,145,255,.15);color:var(--primary);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${i+1}</span><p style="font-size:12px;color:var(--muted)">${t}</p></div>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function genCode(){return Math.random().toString(36).substring(2,8).toUpperCase();}
+
+async function createRoom(){
+  const code=genCode();
+  const settings={
+    system:document.getElementById('mp-system').value,
+    level:document.getElementById('mp-level').value,
+    questionCount:parseInt(document.getElementById('mp-count').value),
+    timePerQuestion:parseInt(document.getElementById('mp-time').value),
+    maxPlayers:parseInt(document.getElementById('mp-max').value)
+  };
+  await rtdb.ref(`rooms/${code}`).set({
+    code,host:currentUser.uid,hostName:currentUser.displayName||'Host',
+    status:'waiting',settings,
+    players:{[currentUser.uid]:{name:currentUser.displayName||'Host',uid:currentUser.uid,score:0}},
+    createdAt:Date.now()
+  });
+  multiState={code,isHost:true,settings};
+  listenRoom(code);
+  renderWaitingRoom(code);
+}
+
+async function joinRoom(){
+  const code=document.getElementById('join-code').value.toUpperCase().trim();
+  if(!code)return toast('Enter a room code','error');
+  const snap=await rtdb.ref(`rooms/${code}`).get();
+  if(!snap.exists())return toast('Room not found','error');
+  const data=snap.val();
+  if(data.status!=='waiting')return toast('Game already started','error');
+  if(Object.keys(data.players||{}).length>=(data.settings?.maxPlayers||4))return toast('Room is full','error');
+  await rtdb.ref(`rooms/${code}/players/${currentUser.uid}`).set({name:currentUser.displayName||'Player',uid:currentUser.uid,score:0});
+  multiState={code,isHost:false,settings:data.settings};
+  listenRoom(code);
+  renderWaitingRoom(code);
+}
+
+function listenRoom(code){
+  if(roomListener){roomListener();roomListener=null;}
+  roomListener=rtdb.ref(`rooms/${code}`).on('value',snap=>{
+    const data=snap.val();
+    if(!data){toast('Room closed','error');navigate('multiplayer');return;}
+    multiState.roomData=data;
+    if(data.status==='playing'&&!multiState.inBattle){
+      multiState.inBattle=true;
+      multiState.questions=data.questions||[];
+      multiState.current=0;
+      renderBattle();
+    }
+    if(data.status==='finished'){
+      renderBattleResults(data.results);
+    }
+    // Update player list if in waiting room
+    const pList=document.getElementById('mp-players');
+    if(pList) updatePlayerList(data);
+  });
+}
+
+function updatePlayerList(data){
+  const players=Object.values(data.players||{});
+  const settings=data.settings||{};
+  const pList=document.getElementById('mp-players');
+  if(!pList)return;
+  let html='';
+  players.forEach(p=>{
+    html+=`<div class="player-slot filled"><div class="lb-avatar" style="width:36px;height:36px;font-size:14px">${p.name[0].toUpperCase()}</div><div><p style="font-weight:600;color:#fff;font-size:14px">${p.name}</p>${p.uid===data.host?'<p style="font-size:11px;color:#fbbf24">👑 Host</p>':''}</div></div>`;
+  });
+  for(let i=players.length;i<(settings.maxPlayers||4);i++){
+    html+=`<div class="player-slot empty"><div style="width:36px;height:36px;border-radius:50%;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;color:var(--muted)">?</div><p style="font-size:13px;color:var(--muted)">Waiting...</p></div>`;
+  }
+  pList.innerHTML=html;
+  const startBtn=document.getElementById('mp-start-btn');
+  if(startBtn) startBtn.disabled=players.length<2;
+}
+
+function renderWaitingRoom(code){
+  document.getElementById('page').innerHTML=`
+  <div style="max-width:560px;margin:0 auto;text-align:center" class="fade-in">
+    <div class="card">
+      <p style="color:var(--muted);font-size:13px;margin-bottom:8px">Room Code</p>
+      <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:20px">
+        <div class="room-code">${code}</div>
+        <button onclick="navigator.clipboard?.writeText('${code}');toast('Copied!')" style="background:var(--glass);border:1px solid var(--border);border-radius:10px;padding:8px;cursor:pointer;color:var(--muted)">📋</button>
+      </div>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:20px">Share this code with friends to join the battle</p>
+      <div class="players-grid" id="mp-players" style="margin-bottom:24px"></div>
+      <div style="display:flex;gap:12px">
+        <button class="btn btn-secondary" style="flex:1" onclick="leaveRoom()">Leave</button>
+        ${multiState.isHost?`<button class="btn btn-primary" style="flex:1" id="mp-start-btn" onclick="startGame()" disabled>Start Battle ⚔️</button>`:`<p style="flex:1;text-align:center;color:var(--muted);font-size:13px;padding:12px">Waiting for host to start...</p>`}
+      </div>
+    </div>
+  </div>`;
+}
+
+async function startGame(){
+  const {code,settings}=multiState;
+  toast('Generating questions...','info');
+  try{
+    const sys=SYSTEMS.find(s=>s.id===settings.system);
+    const qs=await geminiGenerateQuiz(sys?.name||'Pharmacology',settings.level,'MCQ',settings.questionCount);
+    await rtdb.ref(`rooms/${code}`).update({status:'playing',questions:qs.slice(0,settings.questionCount),startedAt:Date.now()});
+  } catch(e){
+    toast('Failed to generate questions','error');
+  }
+}
+
+function renderBattle(){
+  const {questions,current,roomData,settings}=multiState;
+  const q=questions[current];
+  const players=Object.values(roomData?.players||{}).sort((a,b)=>b.score-a.score);
+  const timePerQ=settings?.timePerQuestion||20;
+  document.getElementById('page').innerHTML=`
+  <div class="quiz-container fade-in">
+    <div class="live-scores">${players.map((p,i)=>`<div class="live-score-item" style="background:${p.uid===currentUser.uid?'rgba(25,145,255,.1)':'var(--glass)'};border:1px solid ${p.uid===currentUser.uid?'rgba(25,145,255,.2)':'var(--border)'};">${i===0?'👑 ':''}<span style="font-weight:600;color:#fff">${p.name.split(' ')[0]}</span><span style="color:var(--primary);font-family:'JetBrains Mono',monospace;font-weight:600">${p.score}</span></div>`).join('')}</div>
+    <div class="quiz-header">
+      <p style="color:var(--muted);font-size:13px">Q ${current+1}/${questions.length}</p>
+      <div class="timer-box" id="battle-timer-box">⏱ <span id="battle-timer">${timePerQ}</span>s</div>
+    </div>
+    <div class="progress-bar" style="margin-bottom:20px"><div class="progress-fill" style="width:${(current/questions.length)*100}%"></div></div>
+    <div class="question-card"><p class="question-text">${q.question}</p></div>
+    <div class="options-grid" id="battle-options">
+      ${(q.options||[]).map((opt,i)=>{
+        const key=['A','B','C','D'][i];
+        return `<button class="option-btn" onclick="submitBattleAnswer('${key}')" id="bopt-${key}">
+          <span class="option-key">${key}</span><span>${opt}</span>
+        </button>`;
+      }).join('')}
+    </div>
+    <div id="battle-exp"></div>
+    <div id="battle-next"></div>
+  </div>`;
+  startBattleTimer(timePerQ);
+}
+
+let battleTimerInt=null;
+function startBattleTimer(sec){
+  clearInterval(battleTimerInt);
+  let t=sec;
+  battleTimerInt=setInterval(()=>{
+    t--;
+    const el=document.getElementById('battle-timer');
+    const box=document.getElementById('battle-timer-box');
+    if(!el){clearInterval(battleTimerInt);return;}
+    el.textContent=t;
+    if(t<=5&&box)box.classList.add('warning');
+    if(t<=0){clearInterval(battleTimerInt);submitBattleAnswer(null);}
+  },1000);
+}
+
+async function submitBattleAnswer(key){
+  clearInterval(battleTimerInt);
+  const q=multiState.questions[multiState.current];
+  const isCorrect=key===q.correct;
+  const timeLeft=parseInt(document.getElementById('battle-timer')?.textContent||'0');
+  const curScore=multiState.roomData?.players?.[currentUser.uid]?.score||0;
+  const newScore=isCorrect?curScore+(timeLeft*10):curScore;
+  document.querySelectorAll('.option-btn').forEach(b=>b.disabled=true);
+  const correctBtn=document.getElementById('bopt-'+q.correct);
+  if(correctBtn)correctBtn.classList.add('correct');
+  if(key&&key!==q.correct){const wb=document.getElementById('bopt-'+key);if(wb)wb.classList.add('wrong');}
+  await rtdb.ref(`rooms/${multiState.code}/players/${currentUser.uid}/score`).set(newScore);
+  await addXP(isCorrect?10:2,isCorrect?'correct':'wrong');
+  if(q.explanation){
+    const exp=document.getElementById('battle-exp');
+    if(exp)exp.innerHTML=`<div class="explanation-box slide-up"><p style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:8px">Explanation</p><p style="font-size:13px;color:var(--text);line-height:1.6">${q.explanation}</p></div>`;
+  }
+  if(multiState.isHost){
+    const nextArea=document.getElementById('battle-next');
+    if(nextArea){
+      const isLast=multiState.current+1>=multiState.questions.length;
+      nextArea.innerHTML=`<button class="btn btn-primary" style="width:100%;padding:14px" onclick="${isLast?'endBattle()':'advanceBattle()'}">${isLast?'End Battle':'Next Question →'}</button>`;
+    }
+  } else {
+    const nextArea=document.getElementById('battle-next');
+    if(nextArea)nextArea.innerHTML=`<p style="text-align:center;color:var(--muted);font-size:13px;padding:12px">Waiting for host to advance...</p>`;
+  }
+}
+
+function advanceBattle(){
+  multiState.current++;
+  multiState.inBattle=true;
+  renderBattle();
+}
+
+async function endBattle(){
+  const players=Object.values(multiState.roomData?.players||{}).sort((a,b)=>b.score-a.score);
+  const winner=players[0];
+  await rtdb.ref(`rooms/${multiState.code}`).update({status:'finished',results:{players,winner:winner?.name}});
+  const isWinner=winner?.uid===currentUser.uid;
+  await addXP(isWinner?100:20,isWinner?'win':'loss');
+}
+
+function renderBattleResults(results){
+  if(roomListener){rtdb.ref(`rooms/${multiState.code}`).off('value',roomListener);roomListener=null;}
+  const players=results?.players||[];
+  const winner=results?.winner;
+  const isWinner=winner===currentUser.displayName;
+  document.getElementById('page').innerHTML=`
+  <div style="max-width:560px;margin:0 auto;text-align:center" class="fade-in">
+    <div class="card">
+      <div style="font-size:64px;margin-bottom:16px">${isWinner?'🏆':'⚔️'}</div>
+      <h2 style="font-size:28px;font-weight:800;color:#fff;margin-bottom:8px">${isWinner?'Victory!':'Battle Over!'}</h2>
+      <p style="color:var(--muted);margin-bottom:24px">Winner: <span style="color:#fbbf24;font-weight:700">👑 ${winner}</span></p>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:24px;text-align:left">
+        ${players.map((p,i)=>`
+        <div style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;${i===0?'background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2)':'background:var(--glass);border:1px solid var(--border)'}">
+          <span style="width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;${i===0?'background:#f59e0b;color:#000':i===1?'background:#94a3b8;color:#000':'background:rgba(255,255,255,.1);color:var(--muted)'}">#${i+1}</span>
+          <div style="flex:1"><p style="font-weight:600;color:#fff">${p.name}</p>${p.uid===currentUser.uid?'<p style="font-size:11px;color:var(--primary)">You</p>':''}</div>
+          <span style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:16px;color:#fff">${p.score}</span>
+        </div>`).join('')}
+      </div>
+      <div style="display:flex;gap:12px">
+        <button class="btn btn-secondary" style="flex:1" onclick="leaveRoom()">Back to Lobby</button>
+        ${multiState.isHost?`<button class="btn btn-primary" style="flex:1" onclick="deleteRoomAndNew()">New Battle</button>`:''}
+      </div>
+    </div>
+  </div>`;
+}
+
+async function leaveRoom(){
+  if(multiState.code){
+    await rtdb.ref(`rooms/${multiState.code}/players/${currentUser.uid}`).remove();
+    if(multiState.isHost) await rtdb.ref(`rooms/${multiState.code}`).remove();
+  }
+  if(roomListener){rtdb.ref(`rooms/${multiState.code}`).off('value');roomListener=null;}
+  multiState={};
+  navigate('multiplayer');
+}
+async function deleteRoomAndNew(){
+  if(multiState.code) await rtdb.ref(`rooms/${multiState.code}`).remove();
+  multiState={};
+  navigate('multiplayer');
+}
+
+// ====== LEADERBOARD ======
+async function renderLeaderboard(){
+  document.getElementById('page').innerHTML=`
+  <div class="fade-in">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
+      <h1 style="font-size:26px;font-weight:800;color:#fff">🏆 Leaderboard</h1>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:24px">
+      ${[['xp','⚡ Top XP'],['wins','🗡️ Most Wins'],['accuracy','🎯 Accuracy']].map((t,i)=>`
+      <button onclick="loadLB('${t[0]}')" id="lb-tab-${t[0]}" class="btn ${i===0?'btn-primary':'btn-secondary'}" style="flex:1;padding:10px;font-size:13px">${t[1]}</button>`).join('')}
+    </div>
+    <div id="lb-list"><div style="text-align:center;padding:40px"><div class="spinner"></div></div></div>
+  </div>`;
+  loadLB('xp');
+}
+
+async function loadLB(field){
+  ['xp','wins','accuracy'].forEach(f=>{
+    const btn=document.getElementById('lb-tab-'+f);
+    if(btn){btn.className=`btn ${f===field?'btn-primary':'btn-secondary'}`;btn.style.flex='1';btn.style.padding='10px';btn.style.fontSize='13px';}
+  });
+  try{
+    let snap;
+    if(field==='accuracy'){
+      snap=await firestore.collection('users').orderBy('totalCorrect','desc').limit(50).get();
+    } else {
+      snap=await firestore.collection('users').orderBy(field,'desc').limit(50).get();
+    }
+    let players=snap.docs.map(d=>d.data());
+    if(field==='accuracy'){
+      players.sort((a,b)=>{
+        const aa=a.totalAnswered?(a.totalCorrect/a.totalAnswered)*100:0;
+        const ba=b.totalAnswered?(b.totalCorrect/b.totalAnswered)*100:0;
+        return ba-aa;
+      });
+    }
+    const myIdx=players.findIndex(p=>p.uid===currentUser.uid);
+    document.getElementById('lb-list').innerHTML=`
+    ${myIdx>=0?`<div style="display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;background:rgba(25,145,255,.08);border:1px solid rgba(25,145,255,.25);margin-bottom:16px">
+      <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--primary);font-size:18px">#${myIdx+1}</span>
+      <div class="lb-avatar">${currentUser.displayName?.[0]?.toUpperCase()||'P'}</div>
+      <div style="flex:1"><p style="font-weight:600;color:#fff">You</p><p style="font-size:12px;color:var(--muted)">${getRank(players[myIdx]?.xp||0).badge} ${getRank(players[myIdx]?.xp||0).name}</p></div>
+      <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--primary)">${getDisplayVal(players[myIdx],field)}</span>
+    </div>`:''}
+    ${players.map((p,i)=>`
+    <div class="lb-entry" style="${i<3?'background:rgba(245,158,11,.04);border:1px solid rgba(245,158,11,.12)':'background:var(--glass);border:1px solid var(--border)'};">
+      <div class="lb-rank" style="color:${i===0?'#fbbf24':i===1?'#94a3b8':i===2?'#b45309':'var(--muted)'}">${i<3?['🥇','🥈','🥉'][i]:`#${i+1}`}</div>
+      <div class="lb-avatar">${(p.username||p.email||'P')[0].toUpperCase()}</div>
+      <div style="flex:1;min-width:0">
+        <p style="font-weight:600;color:#fff;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.username||p.email?.split('@')[0]||'Player'}</p>
+        <p style="font-size:12px;color:var(--muted)">${getRank(p.xp||0).badge} ${getRank(p.xp||0).name}</p>
+      </div>
+      <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:#fff;font-size:14px">${getDisplayVal(p,field)}</span>
+    </div>`).join('')}`;
+  } catch(e){
+    document.getElementById('lb-list').innerHTML='<p style="color:var(--muted);text-align:center;padding:40px">Failed to load leaderboard</p>';
+  }
+}
+
+function getDisplayVal(p,field){
+  if(field==='xp') return (p.xp||0).toLocaleString()+' XP';
+  if(field==='wins') return (p.wins||0)+' wins';
+  if(field==='accuracy'){const a=p.totalAnswered?Math.round((p.totalCorrect/p.totalAnswered)*100):0;return a+'%';}
+  return '-';
+}
+
+// ====== AI TUTOR ======
+function renderTutor(){
+  chatMessages=chatMessages.length?chatMessages:[{role:'assistant',content:"👋 Hi! I'm **PharmBot**, your AI pharmacology tutor.\n\nAsk me about any drug, mechanism, clinical case, or pharmacology concept!"}];
+  document.getElementById('page').innerHTML=`
+  <div class="fade-in">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+      <div style="width:48px;height:48px;background:linear-gradient(135deg,var(--purple),#7c3aed);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 20px rgba(139,92,246,.3)">🤖</div>
+      <div><h1 style="font-size:22px;font-weight:800;color:#fff">AI Pharmacology Tutor</h1><p style="color:var(--muted);font-size:13px">Powered by Gemini AI</p></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px">
+      ${['Mechanism of beta-blockers','Warfarin interactions','Opioid side effects','ACLS drugs','Aminoglycoside toxicity','How do SSRIs work?'].map(p=>`
+      <button onclick="sendChat('${p}')" style="flex-shrink:0;padding:8px 14px;background:var(--glass);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap">${p}</button>`).join('')}
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button onclick="setTutorTab('chat')" id="t-chat" class="btn btn-primary" style="flex:1;padding:10px;font-size:13px">💬 Chat</button>
+      <button onclick="setTutorTab('drug')" id="t-drug" class="btn btn-secondary" style="flex:1;padding:10px;font-size:13px">💊 Drug Lookup</button>
+    </div>
+    <div id="tutor-body"></div>
+  </div>`;
+  renderChatTab();
+}
+
+function setTutorTab(tab){
+  document.getElementById('t-chat').className=`btn ${tab==='chat'?'btn-primary':'btn-secondary'}`;
+  document.getElementById('t-chat').style='flex:1;padding:10px;font-size:13px';
+  document.getElementById('t-drug').className=`btn ${tab==='drug'?'btn-primary':'btn-secondary'}`;
+  document.getElementById('t-drug').style='flex:1;padding:10px;font-size:13px';
+  if(tab==='chat') renderChatTab();
+  else renderDrugTab();
+}
+
+function renderChatTab(){
+  document.getElementById('tutor-body').innerHTML=`
+  <div class="chat-container">
+    <div class="messages" id="chat-msgs">
+      ${chatMessages.map(m=>renderMsg(m)).join('')}
+    </div>
+    <div class="chat-input-row">
+      <button onclick="chatMessages=[chatMessages[0]];renderChatTab()" style="padding:12px;background:var(--glass);border:1px solid var(--border);border-radius:12px;cursor:pointer;color:var(--muted)">🗑️</button>
+      <input class="input" id="chat-input" placeholder="Ask about any drug, mechanism, or clinical case..." onkeydown="if(event.key==='Enter')sendChat()" style="flex:1"/>
+      <button onclick="sendChat()" class="btn" style="padding:12px 16px;background:linear-gradient(135deg,var(--purple),#7c3aed);color:#fff;border-radius:12px">➤</button>
+    </div>
+  </div>`;
+  scrollChat();
+}
+
+function renderMsg(m){
+  const formatted=m.content.replace(/\*\*(.*?)\*\*/g,'<strong style="color:#fff">$1</strong>').replace(/\n/g,'<br>');
+  return `<div class="msg msg-${m.role==='user'?'user':'bot'}" style="align-self:${m.role==='user'?'flex-end':'flex-start'}">
+    <div class="msg-avatar">${m.role==='user'?'👤':'🤖'}</div>
+    <div class="msg-bubble">${formatted}</div>
+  </div>`;
+}
+
+function scrollChat(){setTimeout(()=>{const el=document.getElementById('chat-msgs');if(el)el.scrollTop=el.scrollHeight;},100);}
+
+async function sendChat(text){
+  const input=document.getElementById('chat-input');
+  const msg=text||(input?.value.trim());
+  if(!msg) return;
+  if(input) input.value='';
+  chatMessages.push({role:'user',content:msg});
+  const msgs=document.getElementById('chat-msgs');
+  if(msgs){
+    msgs.innerHTML+=renderMsg({role:'user',content:msg});
+    msgs.innerHTML+=`<div class="msg msg-bot" id="typing-msg"><div class="msg-avatar">🤖</div><div class="msg-bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div></div>`;
+    scrollChat();
+  }
+  try{
+    const reply=await geminiChat(chatMessages.slice(-8),msg);
+    chatMessages.push({role:'assistant',content:reply});
+    const typing=document.getElementById('typing-msg');
+    if(typing) typing.outerHTML=renderMsg({role:'assistant',content:reply});
+    scrollChat();
+  } catch(e){
+    const typing=document.getElementById('typing-msg');
+    if(typing) typing.outerHTML=renderMsg({role:'assistant',content:'Sorry, I\'m having trouble connecting. Please check your Gemini API key.'});
+  }
+}
+
+function renderDrugTab(){
+  document.getElementById('tutor-body').innerHTML=`
+  <div>
+    <div style="display:flex;gap:10px;margin-bottom:20px">
+      <input class="input" id="drug-input" placeholder="Enter drug name (e.g. Metformin, Atenolol...)" onkeydown="if(event.key==='Enter')lookupDrug()"/>
+      <button onclick="lookupDrug()" class="btn btn-primary" style="padding:12px 20px;white-space:nowrap">🔍 Lookup</button>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px">
+      ${['Metformin','Atenolol','Amoxicillin','Warfarin','Furosemide','Atorvastatin'].map(d=>`<button onclick="document.getElementById('drug-input').value='${d}';lookupDrug()" style="padding:6px 14px;background:var(--glass);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif">${d}</button>`).join('')}
+    </div>
+    <div id="drug-result"></div>
+  </div>`;
+}
+
+async function lookupDrug(){
+  const name=document.getElementById('drug-input')?.value.trim();
+  if(!name) return toast('Enter a drug name','error');
+  document.getElementById('drug-result').innerHTML=`<div style="text-align:center;padding:40px"><div class="spinner" style="width:32px;height:32px;margin:0 auto 12px"></div><p style="color:var(--muted)">Fetching drug information...</p></div>`;
+  try{
+    const info=await geminiDrugInfo(name);
+    document.getElementById('drug-result').innerHTML=`
+    <div class="card fade-in">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+        <div style="width:56px;height:56px;background:linear-gradient(135deg,var(--purple),#7c3aed);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:28px">💊</div>
+        <div><h2 style="font-size:22px;font-weight:800;color:#fff">${info.name}</h2><p style="color:var(--purple);font-size:13px;font-weight:600">${info.class}</p></div>
+      </div>
+      <div class="drug-info-grid">
+        <div class="drug-info-block" style="grid-column:1/-1"><div class="info-title">⚙️ Mechanism</div><p style="font-size:13px;color:var(--text);line-height:1.6">${info.mechanism}</p></div>
+        <div class="drug-info-block" style="border-color:rgba(139,92,246,.3);background:rgba(139,92,246,.05)"><div class="info-title" style="color:var(--purple)">💡 Clinical Pearl</div><p style="font-size:13px;color:#c4b5fd;line-height:1.6">${info.clinicalPearl}</p></div>
+        <div class="drug-info-block"><div class="info-title">💉 Dosing</div><p style="font-size:13px;color:var(--text);line-height:1.6">${info.dosing}</p></div>
+        <div class="drug-info-block"><div class="info-title" style="color:#4ade80">✅ Uses</div>${(info.uses||[]).map(u=>`<div style="display:flex;gap:6px;margin-bottom:4px"><span style="color:#4ade80;flex-shrink:0">•</span><p style="font-size:13px;color:var(--text)">${u}</p></div>`).join('')}</div>
+        <div class="drug-info-block"><div class="info-title" style="color:#fbbf24">⚠️ Side Effects</div>${(info.sideEffects||[]).map(s=>`<div style="display:flex;gap:6px;margin-bottom:4px"><span style="color:#fbbf24;flex-shrink:0">•</span><p style="font-size:13px;color:var(--text)">${s}</p></div>`).join('')}</div>
+        <div class="drug-info-block"><div class="info-title" style="color:#f87171">🚫 Contraindications</div>${(info.contraindications||[]).map(c=>`<div style="display:flex;gap:6px;margin-bottom:4px"><span style="color:#f87171;flex-shrink:0">•</span><p style="font-size:13px;color:var(--text)">${c}</p></div>`).join('')}</div>
+        <div class="drug-info-block"><div class="info-title" style="color:#fb923c">⚡ Interactions</div>${(info.interactions||[]).map(i=>`<div style="display:flex;gap:6px;margin-bottom:4px"><span style="color:#fb923c;flex-shrink:0">•</span><p style="font-size:13px;color:var(--text)">${i}</p></div>`).join('')}</div>
+        ${info.mnemonics?`<div class="drug-info-block" style="grid-column:1/-1;background:rgba(34,197,94,.05);border-color:rgba(34,197,94,.2)"><div class="info-title" style="color:#4ade80">🧠 Mnemonic</div><p style="font-size:14px;color:#86efac;line-height:1.6;font-weight:500">${info.mnemonics}</p></div>`:''}
+      </div>
+    </div>`;
+  } catch(e){
+    document.getElementById('drug-result').innerHTML='<p style="color:#f87171;text-align:center;padding:20px">Failed to fetch drug info. Check your Gemini API key.</p>';
+  }
+}
+
+// ====== PROFILE ======
+function renderProfile(){
+  const xp=userProfile?.xp||0,rank=getRank(xp);
+  const acc=userProfile?.totalAnswered?Math.round((userProfile.totalCorrect/userProfile.totalAnswered)*100):0;
+  const nextRank=RANKS.find(r=>r.minXP>xp);
+  const curRank=RANKS.filter(r=>r.minXP<=xp).pop()||RANKS[0];
+  const pct=nextRank?((xp-curRank.minXP)/(nextRank.minXP-curRank.minXP))*100:100;
+  const badges=[
+    {id:'first_quiz',icon:'🎓',name:'First Steps',desc:'Completed first quiz'},
+    {id:'streak_5',icon:'🔥',name:'On Fire',desc:'5 answer streak'},
+    {id:'streak_10',icon:'⚡',name:'Lightning',desc:'10 answer streak'},
+    {id:'first_win',icon:'🏆',name:'Champion',desc:'Won first arena battle'},
+    {id:'accuracy_90',icon:'🎯',name:'Sharpshooter',desc:'90%+ accuracy'},
+    {id:'100_questions',icon:'📚',name:'Dedicated',desc:'Answered 100 questions'},
+    {id:'500_questions',icon:'🧠',name:'Scholar',desc:'Answered 500 questions'},
+    {id:'all_systems',icon:'🌟',name:'Complete',desc:'Tried all 20 systems'},
+  ];
+  const earned=userProfile?.badges||[];
+  document.getElementById('page').innerHTML=`
+  <div class="fade-in">
+    <div class="card" style="margin-bottom:20px;position:relative;overflow:hidden">
+      <div style="position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:radial-gradient(circle,rgba(25,145,255,.08),transparent);border-radius:50%"></div>
+      <div style="display:flex;align-items:flex-start;gap:20px">
+        <div style="position:relative;flex-shrink:0">
+          <div style="width:80px;height:80px;border-radius:20px;background:linear-gradient(135deg,var(--primary),var(--purple));display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;color:#fff;box-shadow:0 8px 30px rgba(25,145,255,.3)">${currentUser?.displayName?.[0]?.toUpperCase()||'P'}</div>
+          <div style="position:absolute;bottom:-6px;right:-6px;width:26px;height:26px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px">${rank.badge}</div>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <h1 style="font-size:22px;font-weight:800;color:#fff">${currentUser?.displayName||'Pharmacist'}</h1>
+            <button onclick="editUsername()" style="padding:4px 8px;background:var(--glass);border:1px solid var(--border);border-radius:8px;cursor:pointer;color:var(--muted);font-size:12px">✏️</button>
+          </div>
+          <p style="color:var(--muted);font-size:13px;margin-bottom:10px">${currentUser?.email}</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+            <span class="badge" style="background:rgba(25,145,255,.12);border:1px solid rgba(25,145,255,.25);color:var(--primary)">${rank.badge} ${rank.name}</span>
+            <span class="badge" style="background:var(--glass);border:1px solid var(--border);color:var(--muted)">${userProfile?.wins||0}W / ${userProfile?.losses||0}L</span>
+          </div>
+          ${nextRank?`<div><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:6px"><span>${curRank.name}</span><span>${xp.toLocaleString()} / ${nextRank.minXP.toLocaleString()} XP → ${nextRank.name}</span></div><div class="progress-bar"><div class="progress-fill" style="width:${Math.min(pct,100)}%"></div></div></div>`:''}
+        </div>
+      </div>
+    </div>
+    <div class="stats-grid" style="margin-bottom:20px">
+      <div class="stat-card" style="background:rgba(25,145,255,.08);border:1px solid rgba(25,145,255,.2)"><div class="stat-val" style="color:var(--primary)">${xp.toLocaleString()}</div><div class="stat-label">Total XP</div></div>
+      <div class="stat-card" style="background:rgba(6,182,212,.08);border:1px solid rgba(6,182,212,.2)"><div class="stat-val" style="color:var(--cyan)">${userProfile?.totalAnswered||0}</div><div class="stat-label">Questions</div></div>
+      <div class="stat-card" style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2)"><div class="stat-val" style="color:#fbbf24">${userProfile?.wins||0}</div><div class="stat-label">Wins</div></div>
+      <div class="stat-card" style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2)"><div class="stat-val" style="color:#4ade80">${acc}%</div><div class="stat-label">Accuracy</div></div>
+    </div>
+    <div class="card" style="margin-bottom:20px">
+      <h2 style="font-size:18px;font-weight:700;color:#fff;margin-bottom:16px">Rank Progression</h2>
+      ${RANKS.map(r=>{
+        const isUnlocked=xp>=r.minXP,isCurrent=r.name===rank.name;
+        return `<div class="rank-item" style="border:1px solid ${isCurrent?'rgba(25,145,255,.3)':isUnlocked?'var(--border)':'rgba(255,255,255,.04)'};background:${isCurrent?'rgba(25,145,255,.08)':'var(--glass)'};opacity:${isUnlocked?1:.4}">
+          <div style="width:40px;height:40px;border-radius:12px;border:1px solid ${isCurrent?'rgba(25,145,255,.4)':'var(--border)'};background:${isCurrent?'rgba(25,145,255,.12)':'rgba(255,255,255,.03)'};display:flex;align-items:center;justify-content:center;font-size:20px">${r.badge}</div>
+          <div style="flex:1"><p style="font-weight:600;font-size:14px;color:${isCurrent?'#93c5fd':'#fff'}">${r.name}${isCurrent?' <span style="font-size:11px;color:var(--primary)">← Current</span>':''}</p><p style="font-size:12px;color:var(--muted)">${r.minXP.toLocaleString()} XP</p></div>
+          ${isUnlocked?'<span style="color:#4ade80;font-size:18px">✓</span>':''}
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="card">
+      <h2 style="font-size:18px;font-weight:700;color:#fff;margin-bottom:16px">Achievements</h2>
+      <div class="badge-grid">
+        ${badges.map(b=>{
+          const e=earned.includes(b.id);
+          return `<div class="badge-item" style="background:${e?'rgba(245,158,11,.07)':'var(--glass)'};border:1px solid ${e?'rgba(245,158,11,.25)':'var(--border)'};opacity:${e?1:.4}">
+            <div style="font-size:28px;margin-bottom:6px">${e?b.icon:'🔒'}</div>
+            <p style="font-weight:700;color:#fff;font-size:12px;margin-bottom:3px">${b.name}</p>
+            <p style="color:var(--muted);font-size:11px;line-height:1.3">${b.desc}</p>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  </div>`;
+}
+
+async function editUsername(){
+  const name=prompt('Enter new username:',currentUser?.displayName||'');
+  if(!name||!name.trim()) return;
+  try{
+    await currentUser.updateProfile({displayName:name.trim()});
+    await firestore.collection('users').doc(currentUser.uid).update({username:name.trim()});
+    toast('Username updated!');
+    renderProfile();
+    updateSidebar();
+  } catch(e){ toast('Failed to update','error'); }
+}
+
+// ====== ADMIN ======
+function renderAdmin(){
+  document.getElementById('page').innerHTML=`
+  <div style="max-width:480px;margin:0 auto;margin-top:40px" class="fade-in">
+    <div class="card" style="text-align:center;border-color:rgba(139,92,246,.2)">
+      <div style="font-size:48px;margin-bottom:16px">🛡️</div>
+      <h1 style="font-size:22px;font-weight:800;color:#fff;margin-bottom:6px">Admin Panel</h1>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:24px">Enter admin password to continue</p>
+      <input class="input" id="admin-pw" type="password" placeholder="Admin password" onkeydown="if(event.key==='Enter')checkAdmin()" style="margin-bottom:12px"/>
+      <button class="btn btn-primary" style="width:100%;padding:14px" onclick="checkAdmin()">Access Admin Panel</button>
+    </div>
+  </div>`;
+}
+
+async function checkAdmin(){
+  const pw=document.getElementById('admin-pw')?.value;
+  if(pw!==ADMIN_PASSWORD) return toast('Wrong password','error');
+  document.getElementById('page').innerHTML=`<div style="text-align:center;padding:40px"><div class="spinner"></div><p style="color:var(--muted);margin-top:12px">Loading admin data...</p></div>`;
+  try{
+    const snap=await firestore.collection('users').orderBy('xp','desc').limit(100).get();
+    const users=snap.docs.map(d=>d.data());
+    const totalQ=users.reduce((s,u)=>s+(u.totalAnswered||0),0);
+    const avgAcc=users.length?Math.round(users.reduce((s,u)=>s+(u.totalAnswered?(u.totalCorrect/u.totalAnswered)*100:0),0)/users.length):0;
+    document.getElementById('page').innerHTML=`
+    <div class="fade-in">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px">
+        <h1 style="font-size:22px;font-weight:800;color:#fff">🛡️ Admin Panel</h1>
+      </div>
+      <div class="stats-grid" style="margin-bottom:24px">
+        <div class="stat-card" style="background:rgba(25,145,255,.08);border:1px solid rgba(25,145,255,.2)"><div class="stat-val" style="color:var(--primary)">${users.length}</div><div class="stat-label">Total Users</div></div>
+        <div class="stat-card" style="background:rgba(6,182,212,.08);border:1px solid rgba(6,182,212,.2)"><div class="stat-val" style="color:var(--cyan)">${totalQ.toLocaleString()}</div><div class="stat-label">Questions Done</div></div>
+        <div class="stat-card" style="background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2)"><div class="stat-val" style="color:#4ade80">${avgAcc}%</div><div class="stat-label">Avg Accuracy</div></div>
+        <div class="stat-card" style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2)"><div class="stat-val" style="color:#fbbf24">${users.reduce((s,u)=>s+(u.wins||0),0)}</div><div class="stat-label">Total Wins</div></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <h2 style="font-size:18px;font-weight:700;color:#fff">Users</h2>
+          <input class="input" placeholder="Search..." id="admin-search" oninput="adminFilter(this.value)" style="width:200px;padding:8px 12px"/>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="admin-table" id="admin-table">
+            <thead><tr><th>User</th><th>XP</th><th>Qs</th><th>Acc</th><th>W/L</th><th>Actions</th></tr></thead>
+            <tbody id="admin-tbody">
+              ${users.map(u=>{
+                const acc=u.totalAnswered?Math.round((u.totalCorrect/u.totalAnswered)*100):0;
+                return `<tr data-name="${(u.username||u.email||'').toLowerCase()}">
+                  <td><div style="display:flex;align-items:center;gap:8px"><div class="lb-avatar" style="width:32px;height:32px;font-size:13px">${(u.username||u.email||'P')[0].toUpperCase()}</div><div><p style="font-weight:600;font-size:13px;color:#fff">${u.username||'No name'}</p><p style="font-size:11px;color:var(--muted)">${u.email||''}</p></div></div></td>
+                  <td style="font-family:'JetBrains Mono',monospace;color:var(--primary)">${(u.xp||0).toLocaleString()}</td>
+                  <td style="color:var(--text)">${u.totalAnswered||0}</td>
+                  <td style="color:#4ade80">${acc}%</td>
+                  <td style="color:var(--muted)">${u.wins||0}/${u.losses||0}</td>
+                  <td><div style="display:flex;gap:6px">
+                    <button onclick="adminResetXP('${u.uid}')" style="padding:4px 8px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.25);border-radius:6px;color:#fbbf24;font-size:11px;cursor:pointer">Reset XP</button>
+                    <button onclick="adminDelete('${u.uid}')" style="padding:4px 8px;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);border-radius:6px;color:#f87171;font-size:11px;cursor:pointer">Delete</button>
+                  </div></td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+  } catch(e){ toast('Failed to load admin data','error'); }
+}
+
+function adminFilter(q){
+  document.querySelectorAll('#admin-tbody tr').forEach(row=>{
+    row.style.display=row.dataset.name?.includes(q.toLowerCase())?'':'none';
+  });
+}
+async function adminResetXP(uid){
+  if(!confirm('Reset XP for this user?')) return;
+  await firestore.collection('users').doc(uid).update({xp:0});
+  toast('XP reset');
+  checkAdmin();
+}
+async function adminDelete(uid){
+  if(!confirm('Delete this user permanently?')) return;
+  await firestore.collection('users').doc(uid).delete();
+  toast('User deleted');
+  checkAdmin();
+}
+
+// ====== GEMINI API ======
+async function geminiCall(prompt,system=""){
+  const models=["gemini-2.5-flash","gemini-1.5-flash","gemini-pro"];
+  let lastErr="";
+  for(const model of models){
+    try{
+      const body={contents:[{role:"user",parts:[{text:(system?system+"\n\n":"")+prompt}]}],generationConfig:{temperature:.7,maxOutputTokens:2048,topP:.9}};
+      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_KEY}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+      if(!res.ok){const err=await res.json().catch(()=>({}));lastErr=err?.error?.message||res.status;continue;}
+      const data=await res.json();
+      const text=data.candidates?.[0]?.content?.parts?.[0]?.text||"";
+      if(text) return text;
+    }catch(e){lastErr=e.message;continue;}
+  }
+  throw new Error("Gemini failed: "+lastErr);
+}
+
+async function geminiGenerateQuiz(system,level,type,count){
+  const raw=await geminiCall(
+    `Generate ${count} pharmacology quiz questions about "${system}" at ${level} difficulty, type: ${type}.
+Return ONLY a JSON array:
+[{"id":"1","question":"...","type":"${type}","options":["A. ...","B. ...","C. ...","D. ..."],"correct":"A","explanation":"...","difficulty":"${level}","system":"${system}"}]
+For TrueFalse: options=["True","False"], correct="True" or "False"`,
+    'You are an expert pharmacology professor. Return valid JSON only, no markdown.'
+  );
+  const clean=raw.replace(/```json|```/g,'').trim();
+  try{return JSON.parse(clean);}catch{
+    const m=clean.match(/\[[\s\S]*\]/);
+    if(m) return JSON.parse(m[0]);
+    throw new Error('Parse failed');
+  }
+}
+
+async function geminiChat(history,msg){
+  const hist=history.map(m=>`${m.role==='user'?'Student':'PharmBot'}: ${m.content}`).join('\n');
+  return await geminiCall(`${hist}\nStudent: ${msg}\nPharmBot:`,
+    'You are PharmBot, an expert AI pharmacology tutor. Be concise, use bullet points. Cover mechanism, uses, side effects, interactions when asked about drugs.');
+}
+
+async function geminiDrugInfo(drug){
+  const raw=await geminiCall(
+    `Provide pharmacology info for: ${drug}
+Return ONLY JSON:
+{"name":"${drug}","class":"...","mechanism":"...","uses":["..."],"sideEffects":["..."],"interactions":["..."],"contraindications":["..."],"dosing":"...","clinicalPearl":"...","mnemonics":"..."}`,
+    'You are a pharmacology expert. Return valid JSON only.'
+  );
+  const clean=raw.replace(/```json|```/g,'').trim();
+  return JSON.parse(clean);
+}
+
+// ====== TOAST ======
+function toast(msg,type='success'){
+  const el=document.createElement('div');
+  el.style.cssText=`position:fixed;top:20px;left:50%;transform:translateX(-50%);padding:12px 24px;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;z-index:9999;animation:slideUp .3s ease;white-space:nowrap;max-width:90vw;text-align:center;${type==='error'?'background:#1a0a0a;border:1px solid rgba(239,68,68,.4);color:#fca5a5':'background:#0a1a28;border:1px solid rgba(25,145,255,.3);color:#e2e8f0'}`;
+  el.textContent=msg;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),3000);
+}
+</script>
+<script>
+// ====== OWNER SETTINGS PAGE ======
+// فتح صفحة الإعدادات: اضغط على أيقونة 💊 في الـ sidebar 5 مرات متتالية
+let logoTapCount = 0, logoTapTimer = null;
+
+document.addEventListener('click', e => {
+  const logo = e.target.closest('.sidebar-logo');
+  if (!logo) return;
+  logoTapCount++;
+  clearTimeout(logoTapTimer);
+  logoTapTimer = setTimeout(() => { logoTapCount = 0; }, 2000);
+  if (logoTapCount >= 5) {
+    logoTapCount = 0;
+    showSettingsAuth();
+  }
+});
+
+function showSettingsAuth() {
+  const userEmail = currentUser?.email || '';
+  // بريدك الشخصي فقط يفتح الإعدادات
+  if (userEmail === OWNER_EMAIL) {
+    renderSettings();
+  } else {
+    toast('هذه الصفحة للمالك فقط 🔒', 'error');
+  }
+}
+
+function renderSettings() {
+  const currentKey = localStorage.getItem('pa_gemini_key') || GEMINI_KEY;
+  const masked = currentKey.substring(0, 8) + '••••••••••••••••••••' + currentKey.slice(-4);
+
+  const overlay = document.createElement('div');
+  overlay.id = 'settings-page';
+  overlay.style.cssText = 'position:fixed;inset:0;background:#020817;z-index:9998;overflow-y:auto;padding:24px';
+  overlay.innerHTML = `
+    <div style="max-width:480px;margin:0 auto">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:24px">⚙️</span>
+          <div>
+            <h1 style="font-family:'Sora',sans-serif;font-size:20px;font-weight:700;color:#fff">Owner Settings</h1>
+            <p style="font-size:12px;color:#64748b">إعدادات المالك — سرية</p>
+          </div>
+        </div>
+        <button onclick="document.getElementById('settings-page').remove()" 
+          style="padding:8px 16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#94a3b8;font-size:13px;cursor:pointer">✕ إغلاق</button>
+      </div>
+
+      <!-- Gemini API Key -->
+      <div style="background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.2);border-radius:20px;padding:24px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+          <span style="font-size:20px">🤖</span>
+          <div>
+            <h3 style="font-family:'Sora',sans-serif;font-weight:700;color:#fff;font-size:15px">Gemini API Key</h3>
+            <p style="font-size:12px;color:#64748b">المفتاح الحالي: <span style="color:#a78bfa;font-family:'JetBrains Mono',monospace">${masked}</span></p>
+          </div>
+        </div>
+        <input id="new-gemini-key" type="text" placeholder="الصق المفتاح الجديد هنا..." 
+          style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 16px;color:#fff;font-size:13px;outline:none;margin-bottom:10px;font-family:'JetBrains Mono',monospace"/>
+        <div style="display:flex;gap:8px">
+          <button onclick="saveGeminiKey()" 
+            style="flex:1;padding:11px;background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:#fff;border:none;border-radius:11px;font-weight:600;font-size:13px;cursor:pointer">
+            💾 حفظ المفتاح
+          </button>
+          <button onclick="testGeminiKey()" 
+            style="padding:11px 16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:11px;color:#94a3b8;font-size:13px;cursor:pointer">
+            🧪 تجربة
+          </button>
+        </div>
+        <p id="test-result" style="font-size:12px;margin-top:10px;text-align:center"></p>
+      </div>
+
+      <!-- المفتاح من aistudio -->
+      <div style="background:rgba(25,145,255,.05);border:1px solid rgba(25,145,255,.15);border-radius:16px;padding:16px;margin-bottom:16px">
+        <p style="font-size:12px;font-weight:700;color:#60a5fa;margin-bottom:8px">📍 كيف تجيب مفتاح جديد؟</p>
+        <p style="font-size:12px;color:#64748b;line-height:1.7">
+          1. روح: <span style="color:#93c5fd">aistudio.google.com/app/apikey</span><br>
+          2. اضغط <strong style="color:#fff">"Create API key"</strong><br>
+          3. اختار مشروع pharmaarina<br>
+          4. انسخ المفتاح والصقه هنا
+        </p>
+      </div>
+
+      <!-- الجلسة الحالية -->
+      <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;margin-bottom:16px">
+        <p style="font-size:12px;font-weight:700;color:#94a3b8;margin-bottom:12px">👤 الحساب الحالي</p>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#1991ff,#8b5cf6);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:14px">
+            ${currentUser?.displayName?.[0]?.toUpperCase() || 'P'}
+          </div>
+          <div>
+            <p style="font-weight:600;color:#fff;font-size:14px">${currentUser?.displayName || 'Unknown'}</p>
+            <p style="font-size:12px;color:#64748b">${currentUser?.email || ''}</p>
+          </div>
+          ${currentUser?.email === OWNER_EMAIL ? '<span style="margin-left:auto;padding:3px 10px;background:rgba(139,92,246,.2);border:1px solid rgba(139,92,246,.3);border-radius:20px;font-size:11px;color:#a78bfa;font-weight:700">👑 Owner</span>' : ''}
+        </div>
+      </div>
+
+      <!-- Reset -->
+      <button onclick="resetToDefaultKey()" 
+        style="width:100%;padding:11px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:12px;color:#f87171;font-size:13px;cursor:pointer;font-weight:600">
+        🔄 إعادة للمفتاح الأصلي
+      </button>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
+function saveGeminiKey() {
+  const newKey = document.getElementById('new-gemini-key')?.value.trim();
+  if (!newKey) return toast('الصق المفتاح أولاً', 'error');
+  if (!newKey.startsWith('AIza')) return toast('المفتاح غير صحيح — يبدأ بـ AIza', 'error');
+  localStorage.setItem('pa_gemini_key', newKey);
+  GEMINI_KEY = newKey;
+  toast('✅ تم حفظ المفتاح الجديد!');
+  document.getElementById('settings-page')?.remove();
+}
+
+async function testGeminiKey() {
+  const key = document.getElementById('new-gemini-key')?.value.trim() || GEMINI_KEY;
+  const result = document.getElementById('test-result');
+  if (result) result.innerHTML = '<span style="color:#60a5fa">جاري التجربة...</span>';
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+      { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: 'Say OK' }] }] }) }
+    );
+    if (res.ok) {
+      if (result) result.innerHTML = '<span style="color:#4ade80">✅ المفتاح يشتغل ممتاز!</span>';
+    } else {
+      const err = await res.json();
+      if (result) result.innerHTML = `<span style="color:#f87171">❌ خطأ: ${err?.error?.message || res.status}</span>`;
+    }
+  } catch (e) {
+    if (result) result.innerHTML = `<span style="color:#f87171">❌ ${e.message}</span>`;
+  }
+}
+
+function resetToDefaultKey() {
+  localStorage.removeItem('pa_gemini_key');
+  GEMINI_KEY = "AIzaSyCQSgzd76tfk1Hg7W7LZteSfVndEoMKs7A";
+  toast('تم الإعادة للمفتاح الأصلي');
+  document.getElementById('settings-page')?.remove();
+}
+</script>
+</body>
+</html>
