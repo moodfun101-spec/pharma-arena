@@ -388,6 +388,54 @@ const RANKS=[
 const LEVELS=["beginner","intermediate","advanced","expert","master"];
 const LEVEL_ICONS=["🌱","📚","⚡","🏆","👨‍⚕️"];
 
+// ====== SYSTEM SVG ICONS ======
+function getSysIcon(id){
+  const W='white',O='rgba(0,0,0,.22)',s='width:100%;height:100%;display:block';
+  const icons={
+    nervous:`<svg viewBox="0 0 48 48" fill="none" style="${s}"><path d="M24 7C17 7 11 12 11 19c0 3 1 5 3 7-2 2-3 4-3 7 0 4 3 7 7 7v3h12v-3c4 0 7-3 7-7 0-3-1-5-3-7 2-2 3-4 3-7 0-7-6-12-13-12z" fill="${W}" fill-opacity=".92"/><path d="M24 10v30" stroke="${O}" stroke-width="1.5" stroke-linecap="round"/><path d="M18 19 Q14 24 18 29" stroke="${O}" stroke-width="1.3" fill="none" stroke-linecap="round"/><path d="M30 19 Q34 24 30 29" stroke="${O}" stroke-width="1.3" fill="none" stroke-linecap="round"/><path d="M17 15 Q13 18 15 22" stroke="${O}" stroke-width="1" fill="none" stroke-linecap="round"/><path d="M31 15 Q35 18 33 22" stroke="${O}" stroke-width="1" fill="none" stroke-linecap="round"/></svg>`,
+
+    cardiovascular:`<svg viewBox="0 0 48 48" fill="none" style="${s}"><path d="M24 42S8 30 8 19c0-6 5-10 10-9 2 0 4 1 6 5 2-4 4-5 6-5 5-1 10 3 10 9 0 11-16 23-16 23z" fill="${W}" fill-opacity=".92"/><polyline points="3,27 9,27 13,20 16,35 20,16 23,27 26,27 29,23 32,27 45,27" stroke="rgba(239,68,68,.55)" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+
+    respiratory:`<svg viewBox="0 0 48 48" fill="none" style="${s}"><path d="M24 6v14" stroke="${W}" stroke-width="3" stroke-linecap="round"/><path d="M24 14C20 14 8 16 8 27c0 9 5 15 10 15 5 0 6-5 6-5" fill="none" stroke="${W}" stroke-width="2.5" stroke-linecap="round"/><path d="M24 14c4 0 16 2 16 13 0 9-5 15-10 15-5 0-6-5-6-5" fill="none" stroke="${W}" stroke-width="2.5" stroke-linecap="round"/><ellipse cx="13" cy="33" rx="4" ry="5" fill="${W}" fill-opacity=".4"/><ellipse cx="35" cy="33" rx="4" ry="5" fill="${W}" fill-opacity=".4"/><path d="M10 27 Q13 32 10 37" stroke="${W}" stroke-width="1.2" fill="none" stroke-linecap="round"/><path d="M38 27 Q35 32 38 37" stroke="${W}" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>`,
+
+    gastrointestinal:`<svg viewBox="0 0 48 48" fill="none" style="${s}"><path d="M28 8h-6c-4 0-8 4-8 9s4 9 8 9h4c3 0 6 3 6 6s-3 6-6 6h-3c-4 0-8 3-8 8" stroke="${W}" stroke-width="2.8" fill="none" stroke-linecap="round"/><path d="M32 10c3 0 5 3 5 6s-2 6-5 6" stroke="${W}" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M11 46c2 0 4-2 4-4" stroke="${W}" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`,
+
+    endocrine:`<svg viewBox="0 0 48 48" fill="none" style="${s}"><circle cx="24" cy="11" r="6" fill="${W}" fill-opacity=".92"/><line x1="24" y1="17" x2="24" y2="24" stroke="${W}" stroke-width="3" stroke-linecap="round"/><path d="M24 24C15 24 7 28 7 33c0 5 8 9 17 9s17-4 17-9c0-5-8-9-17-9z" fill="${W}" fill-opacity=".92"/><circle cx="12" cy="33" r="3" fill="${W}" fill-opacity=".6"/><circle cx="36" cy="33" r="3" fill="${W}" fill-opacity=".6"/><path d="M16 24c-1-4-1-9 0-13" stroke="${W}" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M32 24c1-4 1-9 0-13" stroke="${W}" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>`,
+
+    renal:`<svg viewBox="0 0 48 48" fill="none" style="${s}"><path d="M17 7C11 7 7 14 7 21c0 10 5 20 11 20 5 0 6-5 6-9V15c0-4-3-8-7-8z" fill="${W}" fill-opacity=".92"/><path d="M31 7C37 7 41 14 41 21c0 10-5 20-11 20-5 0-6-5-6-9V15c0-4 3-8 7-8z" fill="${W}" fill-opacity=".92"/><path d="M15 14 Q12 21 14 29" stroke="${O}" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M33 14 Q36 21 34 29" stroke="${O}" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>`,
+
+    hematology:`<svg viewBox="0 0 48 48" fill="none" style="${s}"><ellipse cx="24" cy="20" rx="14" ry="10" fill="${W}" fill-opacity=".88"/><ellipse cx="24" cy="20" rx="6" ry="4" fill="rgba(239,68,68,.28)"/><circle cx="10" cy="38" r="5.5" fill="${W}" fill-opacity=".75"/><circle cx="24" cy="38" r="5.5" fill="${W}" fill-opacity=".75"/><circle cx="38" cy="38" r="5.5" fill="${W}" fill-opacity=".75"/><path d="M8 9 L6 17h4z" fill="${W}" fill-opacity=".6"/></svg>`,
+
+    antibiotics:`<svg viewBox="0 0 48 48" fill="none" style="${s}"><rect x="27" y="13" width="14" height="22" rx="7" fill="${W}" fill-opacity=".92"/><line x1="27" y1="24" x2="41" y2="24" stroke="${O}" stroke-width="1.5"/><ellipse cx="16" cy="24" rx="9" ry="6" stroke="${W}" stroke-width="2" fill="${W}" fill-opacity=".18"/><path d="M7 24L5 18M7 24L5 30M25 24L27 18M25 24L27 30" stroke="${W}" stroke-width="1.5" stroke-linecap="round"/><circle cx="16" cy="24" r="2.5" fill="${W}" fill-opacity=".8"/></svg>`,
+
+    antifungals:`<svg viewBox="0 0 48 48" fill="none" style="${s}"><path d="M24 21C14 21 8 26 8 26s6 6 16 6 16-6 16-6-6-5-16-5z" fill="${W}" fill-opacity=".92"/><line x1="24" y1="32" x2="24" y2="46" stroke="${W}" stroke-width="3" stroke-linecap="round"/><circle cx="24" cy="15" r="7" fill="${W}" fill-opacity=".92"/><path d="M16 40c-7-3-11 3-6 7" stroke="${W}" stroke-width="1.8" fill="none" stroke-linecap="round"/><path d="M32 40c7-3 11 3 6 7" stroke="${W}" stroke-width="1.8" fill="none" stroke-linecap="round"/></svg>`,
+
+    antivirals:`<svg viewBox="0 0 48 48" fill="none" style="${s}"><circle cx="24" cy="24" r="11" fill="${W}" fill-opacity=".92"/><circle cx="24" cy="24" r="5" fill="${O}"/><path d="M24 7v6M24 35v6M7 24h6M35 24h6" stroke="${W}" stroke-width="2.2" stroke-linecap="round"/><path d="M12 12l4 4M32 32l4 4M36 12l-4 4M16 32l-4 4" stroke="${W}" stroke-width="2" stroke-linecap="round"/><circle cx="24" cy="7" r="2" fill="${W}"/><circle cx="24" cy="41" r="2" fill="${W}"/><circle cx="7" cy="24" r="2" fill="${W}"/><circle cx="41" cy="24" r="2" fill="${W}"/></svg>`,
+
+    chemotherapy:`<svg viewBox="0 0 48 48" fill="none" style="${s}"><circle cx="24" cy="26" r="13" fill="${W}" fill-opacity=".88"/><circle cx="24" cy="26" r="5.5" fill="${O}"/><path d="M24 7v9M24 7l-4 5M24 7l4 5" stroke="${W}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M41 20l-8 4M41 20l-1-5M41 20l-5 2" stroke="${W}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 20l8 4M7 20l1-5M7 20l5 2" stroke="${W}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+
+    immunology:`<svg viewBox="0 0 48 48" fill="none" style="${s}"><path d="M8 14l16-8 16 8v14c0 11-8 19-16 20C16 47 8 39 8 28z" fill="${W}" fill-opacity=".92"/><path d="M19 26l5 5 9-10" stroke="rgba(0,80,200,.5)" stroke-width="2.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+
+    analgesics:`<svg viewBox="0 0 48 48" fill="none" style="${s}"><rect x="8" y="19" width="32" height="13" rx="6.5" fill="${W}" fill-opacity=".92"/><line x1="24" y1="19" x2="24" y2="32" stroke="${O}" stroke-width="1.5"/><polyline points="19,7 14,17 21,14 17,27" stroke="${W}" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/><polyline points="35,21 31,31 37,29 33,41" stroke="${W}" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/></svg>`,
+
+    anesthesia:`<svg viewBox="0 0 48 48" fill="none" style="${s}"><path d="M8 26c0-11 6-18 16-18s16 7 16 18c0 5-2 9-5 11H13c-3-2-5-6-5-11z" fill="${W}" fill-opacity=".92"/><path d="M15 33c0 7 4 11 9 11s9-4 9-11" stroke="${O}" stroke-width="1.5" fill="none" stroke-linecap="round"/><line x1="16" y1="22" x2="32" y2="22" stroke="${O}" stroke-width="1.5" stroke-linecap="round"/><circle cx="16" cy="22" r="2" fill="${O}"/><circle cx="32" cy="22" r="2" fill="${O}"/><path d="M36 17c5-3 9 0 9 5s-4 7-9 4" stroke="${W}" stroke-width="2" fill="none" stroke-linecap="round"/></svg>`,
+
+    toxicology:`<svg viewBox="0 0 48 48" fill="none" style="${s}"><circle cx="24" cy="19" r="13" fill="${W}" fill-opacity=".92"/><circle cx="17" cy="16" r="3.5" fill="rgba(0,0,0,.38)"/><circle cx="31" cy="16" r="3.5" fill="rgba(0,0,0,.38)"/><path d="M17 27c1 2 3 3 7 3s6-1 7-3" stroke="${O}" stroke-width="1.5" fill="none" stroke-linecap="round"/><rect x="20" y="32" width="8" height="4" rx="2" fill="${W}" fill-opacity=".9"/><path d="M10 39l14-4 14 4" stroke="${W}" stroke-width="2.5" stroke-linecap="round"/><path d="M13 39v7M24 37v9M35 39v7" stroke="${W}" stroke-width="2" stroke-linecap="round"/></svg>`,
+
+    psychiatry:`<svg viewBox="0 0 48 48" fill="none" style="${s}"><circle cx="24" cy="22" r="14" fill="${W}" fill-opacity=".92"/><line x1="24" y1="12" x2="24" y2="32" stroke="${O}" stroke-width="1.5" stroke-linecap="round"/><path d="M20 16 Q16 19 18 24" stroke="${O}" stroke-width="1.3" fill="none" stroke-linecap="round"/><path d="M20 21 Q16 24 19 28" stroke="${O}" stroke-width="1.3" fill="none" stroke-linecap="round"/><path d="M28 16 Q32 19 30 24" stroke="${O}" stroke-width="1.3" fill="none" stroke-linecap="round"/><path d="M28 21 Q32 24 29 28" stroke="${O}" stroke-width="1.3" fill="none" stroke-linecap="round"/><path d="M22 40v-4M26 40v-4" stroke="${W}" stroke-width="2" stroke-linecap="round"/><path d="M39 9c4-3 8 1 5 6" stroke="${W}" stroke-width="1.8" fill="none" stroke-linecap="round"/><polygon points="44,15 40,16 42,12" fill="${W}" fill-opacity=".85"/></svg>`,
+
+    musculoskeletal:`<svg viewBox="0 0 48 48" fill="none" style="${s}"><path d="M20 6c-4 0-6 3-5 7l5 5v12l-5 5c-1 4 1 7 5 7 2 0 4-1 4-3 0 2 2 3 4 3s4-1 4-3c0 2 2 3 4 3 4 0 6-3 5-7l-5-5V18l5-5c1-4-1-7-5-7-2 0-4 1-4 3 0-2-2-3-4-3s-4 1-4 3c0-2-2-3-4-3z" fill="${W}" fill-opacity=".92"/><ellipse cx="24" cy="18" rx="4" ry="3" fill="${O}"/><ellipse cx="24" cy="30" rx="4" ry="3" fill="${O}"/></svg>`,
+
+    dermatology:`<svg viewBox="0 0 48 48" fill="none" style="${s}"><path d="M6 14 Q24 7 42 14v7H6z" fill="${W}" fill-opacity=".35"/><rect x="6" y="21" width="36" height="9" fill="${W}" fill-opacity=".58"/><rect x="6" y="30" width="36" height="12" rx="3" fill="${W}" fill-opacity=".92"/><path d="M6 14 Q24 7 42 14" stroke="${W}" stroke-width="2" fill="none"/><line x1="6" y1="21" x2="42" y2="21" stroke="${W}" stroke-width="1" opacity=".4"/><line x1="6" y1="30" x2="42" y2="30" stroke="${W}" stroke-width="1" opacity=".4"/><circle cx="13" cy="18" r="1.8" fill="${W}" fill-opacity=".65"/><circle cx="24" cy="17" r="1.8" fill="${W}" fill-opacity=".65"/><circle cx="35" cy="18" r="1.8" fill="${W}" fill-opacity=".65"/></svg>`,
+
+    ophthalmology:`<svg viewBox="0 0 48 48" fill="none" style="${s}"><path d="M4 24C9 13 17 7 24 7s15 6 20 17C39 35 31 41 24 41S9 35 4 24z" fill="${W}" fill-opacity=".92"/><circle cx="24" cy="24" r="9" fill="rgba(100,160,220,.48)"/><circle cx="24" cy="24" r="5.5" fill="rgba(0,0,0,.55)"/><circle cx="27" cy="21" r="2.2" fill="${W}" fill-opacity=".88"/><path d="M4 24C9 13 17 7 24 7" stroke="${O}" stroke-width="1" fill="none"/></svg>`,
+
+    emergency:`<svg viewBox="0 0 48 48" fill="none" style="${s}"><circle cx="24" cy="24" r="20" stroke="${W}" stroke-width="2.2" fill="${W}" fill-opacity=".15"/><rect x="20" y="7" width="8" height="34" rx="3.5" fill="${W}" fill-opacity=".95"/><rect x="7" y="20" width="34" height="8" rx="3.5" fill="${W}" fill-opacity=".95"/></svg>`,
+  };
+  const sys=SYSTEMS.find(s=>s.id===id);
+  return icons[id]||`<span style="font-size:1.6em;line-height:1">${sys?.icon||'💊'}</span>`;
+}
+
 function getRank(xp){
   let r=RANKS[0];
   for(const rk of RANKS){if(xp>=rk.minXP)r=rk;else break;}
@@ -635,7 +683,7 @@ function renderDashboard(){
     <div class="systems-mini">
       ${SYSTEMS.slice(0,6).map(s=>`
       <div class="system-mini-card" onclick="startQuizFor('${s.id}')">
-        <div class="system-icon-wrap" style="background:${s.grad}">${s.icon}</div>
+        <div class="system-icon-wrap" style="background:${s.grad};padding:6px">${getSysIcon(s.id)}</div>
         <div style="font-size:11px;font-weight:600;color:var(--text);line-height:1.3">${s.name}</div>
       </div>`).join('')}
     </div>
@@ -668,7 +716,7 @@ function renderSystems(){
       ${SYSTEMS.map(s=>`
       <div class="system-card" onclick="startQuizFor('${s.id}')">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
-          <div style="width:56px;height:56px;border-radius:16px;background:${s.grad};display:flex;align-items:center;justify-content:center;font-size:26px;box-shadow:0 4px 20px rgba(0,0,0,.3)">${s.icon}</div>
+          <div style="width:56px;height:56px;border-radius:16px;background:${s.grad};display:flex;align-items:center;justify-content:center;padding:9px;box-shadow:0 4px 20px rgba(0,0,0,.3)">${getSysIcon(s.id)}</div>
           <span style="color:var(--muted);font-size:18px">›</span>
         </div>
         <h3 style="font-weight:700;color:#fff;margin-bottom:6px;font-size:15px">${s.name}</h3>
@@ -684,7 +732,7 @@ function filterSystems(q){
   grid.innerHTML=filtered.map(s=>`
   <div class="system-card" onclick="startQuizFor('${s.id}')">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px">
-      <div style="width:56px;height:56px;border-radius:16px;background:${s.grad};display:flex;align-items:center;justify-content:center;font-size:26px">${s.icon}</div>
+      <div style="width:56px;height:56px;border-radius:16px;background:${s.grad};display:flex;align-items:center;justify-content:center;padding:9px">${getSysIcon(s.id)}</div>
       <span style="color:var(--muted);font-size:18px">›</span>
     </div>
     <h3 style="font-weight:700;color:#fff;margin-bottom:6px;font-size:15px">${s.name}</h3>
@@ -701,7 +749,7 @@ function startQuizFor(systemId){
       <span onclick="navigate('systems')" style="cursor:pointer;color:var(--muted);font-size:14px">← Back</span>
     </div>
     <div class="card" style="border:1px solid ${sys.color}33">
-      <div style="width:80px;height:80px;border-radius:24px;background:${sys.grad};display:flex;align-items:center;justify-content:center;font-size:40px;margin-bottom:20px;box-shadow:0 8px 30px rgba(0,0,0,.3)">${sys.icon}</div>
+      <div style="width:80px;height:80px;border-radius:24px;background:${sys.grad};display:flex;align-items:center;justify-content:center;padding:12px;margin-bottom:20px;box-shadow:0 8px 30px rgba(0,0,0,.3)">${getSysIcon(sys.id)}</div>
       <h1 style="font-size:24px;font-weight:800;color:#fff;margin-bottom:6px">${sys.name}</h1>
       <p style="color:var(--muted);margin-bottom:24px;font-size:14px">${sys.desc}</p>
       <div style="margin-bottom:20px">
@@ -740,7 +788,7 @@ async function launchQuiz(systemId){
     <div style="position:relative;width:80px;height:80px">
       <div style="position:absolute;inset:0;border-radius:50%;border:3px solid rgba(25,145,255,.2)"></div>
       <div style="position:absolute;inset:0;border-radius:50%;border:3px solid transparent;border-top-color:var(--primary);animation:spin .8s linear infinite"></div>
-      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:32px">${sys.icon}</div>
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><div style="width:48px;height:48px">${getSysIcon(sys.id)}</div></div>
     </div>
     <div style="text-align:center"><h2 style="font-size:20px;font-weight:700;color:#fff;margin-bottom:8px">Generating Questions...</h2><p style="color:var(--muted);font-size:14px">Gemini AI is crafting your quiz</p></div>
   </div>`;
@@ -769,7 +817,7 @@ function renderQuestion(){
   <div class="quiz-container fade-in">
     <div class="quiz-header">
       <div style="display:flex;align-items:center;gap:10px">
-        <span style="font-size:22px">${sys?.icon}</span>
+        <span style="display:inline-flex;width:26px;height:26px;flex-shrink:0">${getSysIcon(sys?.id)}</span>
         <div><p style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">${sys?.name}</p><p style="font-size:13px;font-weight:600;color:#fff">Q ${current+1} / ${questions.length}</p></div>
       </div>
       <div style="display:flex;align-items:center;gap:12px">
