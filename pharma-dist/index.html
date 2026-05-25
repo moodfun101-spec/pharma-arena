@@ -421,7 +421,7 @@ function closeSidebar(){
   document.getElementById('sidebar').classList.remove('open');
   document.getElementById('overlay').classList.remove('open');
 }
-function navigate(page){
+function _applyPage(page){
   currentPage=page;
   closeSidebar();
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
@@ -430,6 +430,28 @@ function navigate(page){
   const renders={dashboard:renderDashboard,systems:renderSystems,multiplayer:renderMultiplayer,leaderboard:renderLeaderboard,tutor:renderTutor,profile:renderProfile,admin:renderAdmin};
   if(renders[page]) renders[page]();
 }
+function navigate(page){
+  history.pushState({page:page},'','#'+page);
+  _applyPage(page);
+}
+
+// Android / browser back button support
+window.addEventListener('popstate',function(e){
+  if(!currentUser) return;
+  const page=(e.state&&e.state.page)||'dashboard';
+  if(page==='dashboard'&&currentPage==='dashboard'){
+    // Already on home — push a dummy state so the next back press triggers the dialog
+    history.pushState({page:'dashboard'},'','#dashboard');
+    if(confirm('Exit Pharma Arena?')) window.history.go(-(history.length));
+    return;
+  }
+  _applyPage(page);
+});
+
+// Seed the initial history entry so back-from-dashboard works
+window.addEventListener('load',function(){
+  if(!history.state) history.replaceState({page:'dashboard'},'','#dashboard');
+});
 
 // ====== AUTH RENDERS ======
 function renderAuth(mode='login'){
