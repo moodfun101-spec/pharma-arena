@@ -2,7 +2,7 @@
   "relation": ["delegate_permission/common.handle_all_urls"],
   "target": {
     "namespace": "android_app",
-    "package_name": "app.netlify.sweet_bombolone_681cff.twa",
-    "sha256_cert_fingerprints": ["9F:26:C2:12:A0:2E:51:C6:73:41:AE:1A:D4:A0:7F:60:08:F2:92:26:6F:C5:E6:29:00:A5:3A:2D:FF:F7:78:52"]
+    "package_name": "app.vercel.pharma_arena_wafb.twa",
+    "sha256_cert_fingerprints": ["D8:F2:17:F0:00:45:E6:25:72:8B:79:1E:81:15:27:E8:8B:34:BD:0F:8B:6D:36:95:28:FD:12:50:99:56:0D:E4"]
   }
 }]
