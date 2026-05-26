@@ -34,7 +34,7 @@
   --text: #e2e8f0;
   --muted: #64748b;
 }
-*{box-sizing:border-box;margin:0;padding:0}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none}
 html{scroll-behavior:smooth}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
 h1,h2,h3,h4{font-family:'Sora',sans-serif}
@@ -53,6 +53,11 @@ h1,h2,h3,h4{font-family:'Sora',sans-serif}
 .btn-secondary:hover{background:rgba(255,255,255,.08)}
 .btn-danger{background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff}
 .btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn:active:not(:disabled){transform:scale(.95)!important;transition:transform .08s ease}
+.system-card:active{transform:scale(.97)!important;transition:transform .08s ease}
+.quick-card:active{transform:scale(.97)!important;transition:transform .08s ease}
+.system-mini-card:active{transform:scale(.95)!important;transition:transform .08s ease}
+.option-btn:active:not(:disabled){transform:scale(.98)!important;transition:transform .08s ease}
 .input{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:12px;padding:12px 16px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:all .2s}
 .input:focus{border-color:rgba(25,145,255,.5);background:rgba(255,255,255,.07)}
 .input::placeholder{color:var(--muted)}
@@ -75,7 +80,7 @@ h1,h2,h3,h4{font-family:'Sora',sans-serif}
 #main{flex:1;margin-left:260px;min-height:100vh;transition:margin .3s}
 #main.full{margin-left:0}
 .mobile-header{display:none;align-items:center;justify-content:space-between;padding:12px 16px;background:rgba(10,22,40,.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50}
-.page-content{padding:32px;max-width:1100px;margin:0 auto}
+.page-content{padding:32px;padding-bottom:calc(32px + env(safe-area-inset-bottom));max-width:1100px;margin:0 auto}
 
 /* Sidebar */
 .sidebar-logo{padding:24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
@@ -107,7 +112,8 @@ h1,h2,h3,h4{font-family:'Sora',sans-serif}
 .quick-card{padding:24px;border-radius:20px;cursor:pointer;transition:all .3s;position:relative;overflow:hidden;border:1px solid var(--border);background:var(--glass)}
 .quick-card:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.2)}
 .quick-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:16px}
-.systems-mini{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+.systems-mini{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.systems-mini::-webkit-scrollbar{display:none}
 .system-mini-card{padding:16px 8px;border-radius:16px;text-align:center;cursor:pointer;transition:all .2s;border:1px solid var(--border);background:var(--glass)}
 .system-mini-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.2)}
 .system-icon-wrap{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:24px}
@@ -193,7 +199,7 @@ h1,h2,h3,h4{font-family:'Sora',sans-serif}
   .mp-grid{grid-template-columns:1fr}
   .drug-info-grid{grid-template-columns:1fr}
   .badge-grid{grid-template-columns:repeat(2,1fr)}
-  .page-content{padding:16px}
+  .page-content{padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom))}
   .systems-grid{grid-template-columns:1fr 1fr}
   .question-text{font-size:16px}
   .room-code{font-size:32px}
@@ -457,6 +463,7 @@ auth.onAuthStateChanged(async u=>{
     await Promise.all([loadProfile(u.uid),loadAppConfig()]);
     showApp();
     navigate('dashboard');
+    refreshAdminNav();
   } else {
     currentUser=null;
     userProfile=null;
@@ -799,11 +806,33 @@ async function launchQuiz(systemId){
       userProfile.systemsPlayed=systemsPlayed;
       firestore.collection('users').doc(currentUser.uid).update({systemsPlayed}).catch(()=>{});
     }
-    const qs=await geminiGenerateQuiz(sys.name,quizState.level,quizState.type,10);
+    let qs=[];
+    const key=localStorage.getItem('pa_gemini_key')||GEMINI_KEY;
+    if(key){
+      try{
+        qs=await geminiGenerateQuiz(sys.name,quizState.level,quizState.type,10);
+        // Save to bank in background — don't block UI
+        saveQuestionsToBank(systemId,quizState.level,quizState.type,qs);
+      }catch(genErr){
+        console.warn('[Quiz] Gemini failed → trying question bank:',genErr.message);
+        qs=await getQuestionsFromBank(systemId,quizState.level,quizState.type,10);
+        if(qs.length) toast('⚡ Using saved questions (AI unavailable)');
+      }
+    }else{
+      console.log('[Quiz] No API key → using question bank');
+      qs=await getQuestionsFromBank(systemId,quizState.level,quizState.type,10);
+    }
+    if(!qs||qs.length===0){
+      toast('No questions available. Add a Gemini API key in Settings.','error');
+      startQuizFor(systemId);
+      return;
+    }
+    markQuestionsShown(systemId,quizState.level,quizState.type,qs);
     quizState={...quizState,questions:qs,current:0,score:0,results:[],earned:0,streak:0};
     renderQuestion();
   } catch(e){
-    toast('Failed to generate questions. Check your Gemini API key.','error');
+    console.error('[Quiz] Fatal error:',e);
+    toast('Failed to load questions: '+e.message,'error');
     startQuizFor(systemId);
   }
 }
@@ -1618,19 +1647,85 @@ async function adminDelete(uid){
   checkAdmin();
 }
 
+// ====== ADMIN HELPERS ======
+function checkAdmin(){
+  if(currentPage==='admin') renderAdmin();
+}
+async function refreshAdminNav(){
+  try{
+    const ok=await isAdminUser(currentUser?.uid);
+    const nav=document.getElementById('nav-admin');
+    if(nav) nav.style.display=ok?'':'none';
+  }catch(e){}
+}
+
+// ====== QUESTION BANK (SMART CACHE) ======
+async function getQuestionsFromBank(systemId,level,type,count){
+  try{
+    const docId=`${systemId}_${level}_${type}`;
+    const snap=await firestore.collection('questionBank').doc(docId).get();
+    if(!snap.exists) return [];
+    const all=snap.data().questions||[];
+    if(!all.length) return [];
+    const seenIds=new Set((userProfile?.seenQuestions||{})[docId]||[]);
+    const unseen=all.filter(q=>!seenIds.has(q.id));
+    const pool=unseen.length>=count?unseen:all;
+    return [...pool].sort(()=>Math.random()-.5).slice(0,count);
+  }catch(e){console.warn('[QuestionBank] read error:',e);return [];}
+}
+async function saveQuestionsToBank(systemId,level,type,questions){
+  try{
+    const docId=`${systemId}_${level}_${type}`;
+    const snap=await firestore.collection('questionBank').doc(docId).get();
+    const existing=(snap.exists?snap.data().questions:[])||[];
+    const existingTexts=new Set(existing.map(q=>(q.question||q.title||'').toLowerCase().slice(0,60)));
+    const newOnes=questions.filter(q=>!existingTexts.has((q.question||q.title||'').toLowerCase().slice(0,60)));
+    if(!newOnes.length) return;
+    const withIds=newOnes.map((q,i)=>({...q,id:q.id||`${docId}_${Date.now()}_${i}`}));
+    const merged=[...existing,...withIds].slice(0,500);
+    await firestore.collection('questionBank').doc(docId).set({questions:merged,updatedAt:Date.now()});
+    console.log(`[QuestionBank] +${newOnes.length} new → ${docId} (total ${merged.length})`);
+  }catch(e){console.warn('[QuestionBank] save error:',e);}
+}
+async function markQuestionsShown(systemId,level,type,questions){
+  if(!currentUser) return;
+  try{
+    const docId=`${systemId}_${level}_${type}`;
+    const ids=questions.map(q=>q.id).filter(Boolean);
+    if(!ids.length) return;
+    const seen=userProfile.seenQuestions||{};
+    const prev=seen[docId]||[];
+    seen[docId]=[...new Set([...prev,...ids])].slice(-300);
+    userProfile.seenQuestions=seen;
+    firestore.collection('users').doc(currentUser.uid).update({seenQuestions:seen}).catch(()=>{});
+  }catch(e){}
+}
+
 // ====== GEMINI API ======
 async function geminiCall(prompt,system=""){
+  const key=localStorage.getItem('pa_gemini_key')||GEMINI_KEY;
+  if(!key){
+    console.error('[Gemini] No API key. Set one in Settings.');
+    throw new Error('No Gemini API key configured. Go to Settings to add one.');
+  }
   const models=["gemini-2.5-flash","gemini-1.5-flash","gemini-pro"];
   let lastErr="";
   for(const model of models){
     try{
+      console.log('[Gemini] Trying:',model);
       const body={contents:[{role:"user",parts:[{text:(system?system+"\n\n":"")+prompt}]}],generationConfig:{temperature:.7,maxOutputTokens:2048,topP:.9}};
-      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_KEY}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
-      if(!res.ok){const err=await res.json().catch(()=>({}));lastErr=err?.error?.message||res.status;continue;}
+      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+      if(!res.ok){
+        const err=await res.json().catch(()=>({}));
+        lastErr=err?.error?.message||String(res.status);
+        console.warn('[Gemini]',model,'HTTP error:',lastErr);
+        continue;
+      }
       const data=await res.json();
       const text=data.candidates?.[0]?.content?.parts?.[0]?.text||"";
-      if(text) return text;
-    }catch(e){lastErr=e.message;continue;}
+      if(text){console.log('[Gemini] OK:',model);return text;}
+      lastErr='Empty response';
+    }catch(e){lastErr=e.message;console.error('[Gemini]',model,'exception:',e);continue;}
   }
   throw new Error("Gemini failed: "+lastErr);
 }
