@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "app.vercel.pharma_arena_wafb.twa",
+    "sha256_cert_fingerprints": ["D8:F2:17:F0:00:45:E6:25:72:8B:79:1E:81:15:27:E8:8B:34:BD:0F:8B:6D:36:95:28:FD:12:50:99:56:0D:E4"]
+  }
+}]
