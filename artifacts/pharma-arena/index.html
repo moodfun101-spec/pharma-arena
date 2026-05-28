@@ -293,6 +293,26 @@ const FIREBASE_CONFIG = {
   appId: "1:44628967203:web:86d8480cb0a8c9a02f1696"
 };
 let GEMINI_KEY = localStorage.getItem("pa_gemini_key") || "";
+let _keyIndex = 0; // round-robin cursor
+
+function getKeyPool() {
+  try {
+    const stored = localStorage.getItem('pa_gemini_keys');
+    if (stored) {
+      const arr = JSON.parse(stored);
+      if (Array.isArray(arr) && arr.length) return arr.filter(k => k && k.startsWith('AIza'));
+    }
+  } catch(e) {}
+  const single = localStorage.getItem('pa_gemini_key') || GEMINI_KEY;
+  return single ? [single] : [];
+}
+
+function saveKeyPool(keys) {
+  localStorage.setItem('pa_gemini_keys', JSON.stringify(keys));
+  GEMINI_KEY = keys[0] || '';
+  if (keys[0]) localStorage.setItem('pa_gemini_key', keys[0]);
+  else localStorage.removeItem('pa_gemini_key');
+}
 // ============================================================
 
 // Register Service Worker (PWA) — auto-reload on update
@@ -1750,33 +1770,41 @@ async function markQuestionsShown(systemId,level,type,questions){
 
 // ====== GEMINI API ======
 async function geminiCall(prompt,system=""){
-  const key=localStorage.getItem('pa_gemini_key')||GEMINI_KEY;
-  if(!key){
-    console.error('[Gemini] No API key. Set one in Settings.');
-    throw new Error('No Gemini API key configured. Go to Settings to add one.');
-  }
+  const keys=getKeyPool();
+  if(!keys.length) throw new Error('No Gemini API key configured. Go to Settings to add one.');
   const models=["gemini-2.5-flash","gemini-1.5-flash","gemini-pro"];
-  let lastErr="";
-  for(const model of models){
-    try{
-      console.log('[Gemini] Trying:',model);
-      const isFlash25=model==="gemini-2.5-flash";
-      const body={contents:[{role:"user",parts:[{text:(system?system+"\n\n":"")+prompt}]}],generationConfig:{temperature:.7,maxOutputTokens:4096,topP:.9,...(isFlash25?{thinkingConfig:{thinkingBudget:0}}:{})}};
-      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
-      if(!res.ok){
-        const err=await res.json().catch(()=>({}));
-        lastErr=err?.error?.message||String(res.status);
-        console.warn('[Gemini]',model,'HTTP error:',lastErr);
-        continue;
-      }
-      const data=await res.json();
-      const parts=data.candidates?.[0]?.content?.parts||[];
-      const text=parts.find(p=>!p.thought)?.text||parts[0]?.text||"";
-      if(text){console.log('[Gemini] OK:',model);return text;}
-      lastErr='Empty response';
-    }catch(e){lastErr=e.message;console.error('[Gemini]',model,'exception:',e);continue;}
+  let lastErr="no keys";
+  for(let ki=0;ki<keys.length;ki++){
+    const keyIdx=(_keyIndex+ki)%keys.length;
+    const key=keys[keyIdx];
+    let skipKey=false;
+    for(const model of models){
+      try{
+        console.log(`[Gemini] key#${keyIdx+1}/${keys.length} ${model}`);
+        const isFlash25=model==="gemini-2.5-flash";
+        const body={contents:[{role:"user",parts:[{text:(system?system+"\n\n":"")+prompt}]}],generationConfig:{temperature:.7,maxOutputTokens:4096,topP:.9,...(isFlash25?{thinkingConfig:{thinkingBudget:0}}:{})}};
+        const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+        if(!res.ok){
+          const err=await res.json().catch(()=>({}));
+          lastErr=err?.error?.message||String(res.status);
+          console.warn(`[Gemini] key#${keyIdx+1} ${model}:`,lastErr);
+          if(res.status===429||res.status===403||/quota|RESOURCE_EXHAUSTED|rate/i.test(lastErr)){skipKey=true;break;}
+          continue;
+        }
+        const data=await res.json();
+        const parts=data.candidates?.[0]?.content?.parts||[];
+        const text=parts.find(p=>!p.thought)?.text||parts[0]?.text||"";
+        if(text){
+          console.log(`[Gemini] ✅ key#${keyIdx+1} ${model}`);
+          _keyIndex=(keyIdx+1)%keys.length;
+          return text;
+        }
+        lastErr='Empty response';
+      }catch(e){lastErr=e.message;console.error(`[Gemini] key#${keyIdx+1} ${model}:`,e);}
+    }
+    if(skipKey) console.warn(`[Gemini] key#${keyIdx+1} quota/rate-limit → next key`);
   }
-  throw new Error("Gemini failed: "+lastErr);
+  throw new Error("All Gemini keys failed: "+lastErr);
 }
 
 async function geminiGenerateQuiz(system,level,type,count){
@@ -1929,15 +1957,33 @@ async function showSettingsAuth() {
   }
 }
 
-function renderSettings() {
-  const currentKey = localStorage.getItem('pa_gemini_key') || GEMINI_KEY;
-  const masked = currentKey ? (currentKey.substring(0,8)+'••••••••••••••••••••'+currentKey.slice(-4)) : '⚠️ Not set yet';
+function _maskKey(k){ return k.substring(0,8)+'••••••••••••••••'+k.slice(-4); }
 
+function renderKeyList() {
+  const keys = getKeyPool();
+  const el = document.getElementById('keys-list');
+  if (!el) return;
+  if (!keys.length) {
+    el.innerHTML = `<p style="text-align:center;color:#475569;font-size:13px;padding:16px 0">لا توجد مفاتيح بعد</p>`;
+    return;
+  }
+  el.innerHTML = keys.map((k,i)=>`
+    <div id="key-row-${i}" style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:12px;margin-bottom:8px">
+      <span style="font-size:11px;font-weight:700;color:#475569;min-width:22px">#${i+1}</span>
+      <span style="flex:1;font-family:'JetBrains Mono',monospace;font-size:12px;color:#a78bfa;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_maskKey(k)}</span>
+      <span id="key-status-${i}" style="font-size:11px;min-width:16px">⚪</span>
+      <button onclick="testKeyByIndex(${i})" style="padding:4px 10px;background:rgba(25,145,255,.1);border:1px solid rgba(25,145,255,.25);border-radius:8px;color:#60a5fa;font-size:11px;cursor:pointer">🧪</button>
+      <button onclick="removeGeminiKey(${i})" style="padding:4px 10px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:8px;color:#f87171;font-size:11px;cursor:pointer">🗑️</button>
+    </div>`).join('');
+  document.getElementById('keys-count').textContent = `${keys.length}/20`;
+}
+
+function renderSettings() {
   const overlay = document.createElement('div');
   overlay.id = 'settings-page';
   overlay.style.cssText = 'position:fixed;inset:0;background:#020817;z-index:9998;overflow-y:auto;padding:24px';
   overlay.innerHTML = `
-    <div style="max-width:480px;margin:0 auto">
+    <div style="max-width:500px;margin:0 auto">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px">
         <div style="display:flex;align-items:center;gap:10px">
           <span style="font-size:24px">⚙️</span>
@@ -1947,38 +1993,49 @@ function renderSettings() {
           </div>
         </div>
         <div style="display:flex;gap:8px">
-          <button onclick="document.getElementById('settings-page').remove();navigate('admin')" 
+          <button onclick="document.getElementById('settings-page').remove();navigate('admin')"
             style="padding:8px 16px;background:rgba(25,145,255,.12);border:1px solid rgba(25,145,255,.3);border-radius:10px;color:#60a5fa;font-size:13px;cursor:pointer">🛡️ Admin</button>
-          <button onclick="document.getElementById('settings-page').remove()" 
+          <button onclick="document.getElementById('settings-page').remove()"
             style="padding:8px 16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:#94a3b8;font-size:13px;cursor:pointer">✕ إغلاق</button>
         </div>
       </div>
 
-      <!-- Gemini API Key -->
+      <!-- مفاتيح Gemini -->
       <div style="background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.2);border-radius:20px;padding:24px;margin-bottom:16px">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
-          <span style="font-size:20px">🤖</span>
-          <div>
-            <h3 style="font-family:'Sora',sans-serif;font-weight:700;color:#fff;font-size:15px">Gemini API Key</h3>
-            <p style="font-size:12px;color:#64748b">المفتاح الحالي: <span style="color:#a78bfa;font-family:'JetBrains Mono',monospace">${masked}</span></p>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:20px">🔑</span>
+            <div>
+              <h3 style="font-family:'Sora',sans-serif;font-weight:700;color:#fff;font-size:15px">مفاتيح Gemini API</h3>
+              <p style="font-size:12px;color:#64748b">توزيع تلقائي + failover عند الخطأ</p>
+            </div>
           </div>
+          <span id="keys-count" style="padding:4px 12px;background:rgba(139,92,246,.2);border:1px solid rgba(139,92,246,.3);border-radius:20px;font-size:12px;font-weight:700;color:#a78bfa">0/20</span>
         </div>
-        <input id="new-gemini-key" type="text" placeholder="الصق المفتاح الجديد هنا..." 
-          style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 16px;color:#fff;font-size:13px;outline:none;margin-bottom:10px;font-family:'JetBrains Mono',monospace"/>
-        <div style="display:flex;gap:8px">
-          <button onclick="saveGeminiKey()" 
-            style="flex:1;padding:11px;background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:#fff;border:none;border-radius:11px;font-weight:600;font-size:13px;cursor:pointer">
-            💾 حفظ المفتاح
-          </button>
-          <button onclick="testGeminiKey()" 
-            style="padding:11px 16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:11px;color:#94a3b8;font-size:13px;cursor:pointer">
-            🧪 تجربة
-          </button>
+
+        <!-- قائمة المفاتيح -->
+        <div id="keys-list" style="margin-bottom:16px"></div>
+
+        <!-- إضافة مفتاح جديد -->
+        <div style="border-top:1px solid rgba(255,255,255,.06);padding-top:16px">
+          <p style="font-size:12px;color:#64748b;margin-bottom:8px">➕ إضافة مفتاح جديد</p>
+          <input id="new-gemini-key" type="text" placeholder="الصق المفتاح هنا... (AIzaSy...)"
+            style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:12px 16px;color:#fff;font-size:13px;outline:none;margin-bottom:10px;font-family:'JetBrains Mono',monospace;box-sizing:border-box"/>
+          <div style="display:flex;gap:8px">
+            <button onclick="addGeminiKey()"
+              style="flex:1;padding:11px;background:linear-gradient(135deg,#8b5cf6,#7c3aed);color:#fff;border:none;border-radius:11px;font-weight:600;font-size:13px;cursor:pointer">
+              ➕ إضافة
+            </button>
+            <button onclick="testNewKey()"
+              style="padding:11px 16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:11px;color:#94a3b8;font-size:13px;cursor:pointer">
+              🧪 تجربة
+            </button>
+          </div>
+          <p id="test-result" style="font-size:12px;margin-top:10px;text-align:center"></p>
         </div>
-        <p id="test-result" style="font-size:12px;margin-top:10px;text-align:center"></p>
       </div>
 
-      <!-- المفتاح من aistudio -->
+      <!-- كيف تجيب مفتاح -->
       <div style="background:rgba(25,145,255,.05);border:1px solid rgba(25,145,255,.15);border-radius:16px;padding:16px;margin-bottom:16px">
         <p style="font-size:12px;font-weight:700;color:#60a5fa;margin-bottom:8px">📍 كيف تجيب مفتاح جديد؟</p>
         <p style="font-size:12px;color:#64748b;line-height:1.7">
@@ -1989,70 +2046,107 @@ function renderSettings() {
         </p>
       </div>
 
-      <!-- الجلسة الحالية -->
+      <!-- الحساب الحالي -->
       <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px;margin-bottom:16px">
         <p style="font-size:12px;font-weight:700;color:#94a3b8;margin-bottom:12px">👤 الحساب الحالي</p>
         <div style="display:flex;align-items:center;gap:10px">
           <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#1991ff,#8b5cf6);display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:14px">
-            ${currentUser?.displayName?.[0]?.toUpperCase() || 'P'}
+            ${currentUser?.displayName?.[0]?.toUpperCase()||'P'}
           </div>
           <div>
-            <p style="font-weight:600;color:#fff;font-size:14px">${currentUser?.displayName || 'Unknown'}</p>
-            <p style="font-size:12px;color:#64748b">${currentUser?.email || ''}</p>
+            <p style="font-weight:600;color:#fff;font-size:14px">${currentUser?.displayName||'Unknown'}</p>
+            <p style="font-size:12px;color:#64748b">${currentUser?.email||''}</p>
           </div>
           <span style="margin-left:auto;padding:3px 10px;background:rgba(139,92,246,.2);border:1px solid rgba(139,92,246,.3);border-radius:20px;font-size:11px;color:#a78bfa;font-weight:700">👑 Admin</span>
         </div>
         <p style="font-size:11px;color:#475569;margin-top:8px;font-family:'JetBrains Mono',monospace">UID: ${currentUser?.uid||''}</p>
       </div>
 
-      <!-- Clear Key -->
-      <button onclick="clearGeminiKey()" 
+      <!-- مسح الكل -->
+      <button onclick="clearAllKeys()"
         style="width:100%;padding:11px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:12px;color:#f87171;font-size:13px;cursor:pointer;font-weight:600">
-        🗑️ مسح المفتاح المحفوظ محلياً
+        🗑️ مسح جميع المفاتيح المحفوظة
       </button>
     </div>`;
   document.body.appendChild(overlay);
+  renderKeyList();
 }
 
-async function saveGeminiKey() {
-  const newKey = document.getElementById('new-gemini-key')?.value.trim();
+function addGeminiKey() {
+  const input = document.getElementById('new-gemini-key');
+  const newKey = input?.value.trim();
   if (!newKey) return toast('الصق المفتاح أولاً', 'error');
   if (!newKey.startsWith('AIza')) return toast('المفتاح غير صحيح — يبدأ بـ AIza', 'error');
-  localStorage.setItem('pa_gemini_key', newKey);
-  GEMINI_KEY = newKey;
-  firestore.collection('config').doc('gemini').set({key:newKey}).catch(()=>{});
-  toast('✅ تم حفظ المفتاح الجديد!');
-  document.getElementById('settings-page')?.remove();
+  const keys = getKeyPool();
+  if (keys.length >= 20) return toast('وصلت الحد الأقصى (20 مفتاح)', 'error');
+  if (keys.includes(newKey)) return toast('هذا المفتاح موجود مسبقاً', 'error');
+  keys.push(newKey);
+  saveKeyPool(keys);
+  firestore.collection('config').doc('gemini').set({key:keys[0],keys}).catch(()=>{});
+  toast(`✅ تمت إضافة المفتاح #${keys.length}`);
+  if (input) input.value = '';
+  renderKeyList();
 }
 
-async function testGeminiKey() {
-  const key = document.getElementById('new-gemini-key')?.value.trim() || GEMINI_KEY;
+function removeGeminiKey(i) {
+  const keys = getKeyPool();
+  keys.splice(i, 1);
+  saveKeyPool(keys);
+  firestore.collection('config').doc('gemini').set({key:keys[0]||'',keys}).catch(()=>{});
+  toast('تم حذف المفتاح');
+  renderKeyList();
+}
+
+async function testKeyByIndex(i) {
+  const keys = getKeyPool();
+  const key = keys[i];
+  if (!key) return;
+  const statusEl = document.getElementById(`key-status-${i}`);
+  if (statusEl) statusEl.textContent = '⏳';
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
+      {method:'POST',headers:{'Content-Type':'application/json'},
+       body:JSON.stringify({contents:[{role:'user',parts:[{text:'Say OK'}]}],generationConfig:{maxOutputTokens:10,thinkingConfig:{thinkingBudget:0}}})}
+    );
+    if (statusEl) statusEl.textContent = res.ok ? '✅' : '❌';
+    if (!res.ok) { const e=await res.json(); toast(`مفتاح #${i+1}: ${e?.error?.message||res.status}`,'error'); }
+  } catch(e) {
+    if (statusEl) statusEl.textContent = '❌';
+  }
+}
+
+async function testNewKey() {
+  const key = document.getElementById('new-gemini-key')?.value.trim();
   const result = document.getElementById('test-result');
+  if (!key) { if(result) result.innerHTML='<span style="color:#f87171">الصق مفتاحاً أولاً</span>'; return; }
   if (result) result.innerHTML = '<span style="color:#60a5fa">جاري التجربة...</span>';
   try {
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`,
-      { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: 'Say OK' }] }] }) }
+      {method:'POST',headers:{'Content-Type':'application/json'},
+       body:JSON.stringify({contents:[{role:'user',parts:[{text:'Say OK'}]}],generationConfig:{maxOutputTokens:10,thinkingConfig:{thinkingBudget:0}}})}
     );
-    if (res.ok) {
-      if (result) result.innerHTML = '<span style="color:#4ade80">✅ المفتاح يشتغل ممتاز!</span>';
-    } else {
-      const err = await res.json();
-      if (result) result.innerHTML = `<span style="color:#f87171">❌ خطأ: ${err?.error?.message || res.status}</span>`;
-    }
-  } catch (e) {
+    if (result) result.innerHTML = res.ok
+      ? '<span style="color:#4ade80">✅ المفتاح يشتغل!</span>'
+      : `<span style="color:#f87171">❌ ${(await res.json())?.error?.message||res.status}</span>`;
+  } catch(e) {
     if (result) result.innerHTML = `<span style="color:#f87171">❌ ${e.message}</span>`;
   }
 }
 
-function clearGeminiKey() {
+// Legacy aliases
+async function saveGeminiKey() { addGeminiKey(); }
+async function testGeminiKey() { testNewKey(); }
+
+function clearAllKeys() {
+  localStorage.removeItem('pa_gemini_keys');
   localStorage.removeItem('pa_gemini_key');
   GEMINI_KEY = '';
-  toast('تم مسح المفتاح المحلي — سيُحمّل من Firestore');
-  document.getElementById('settings-page')?.remove();
-  loadAppConfig();
+  toast('تم مسح جميع المفاتيح');
+  renderKeyList();
 }
+function clearGeminiKey() { clearAllKeys(); }
 </script>
 
 <script>
