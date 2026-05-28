@@ -37,7 +37,7 @@
   --text: #e2e8f0;
   --muted: #64748b;
 }
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;touch-action:pan-y}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;touch-action:manipulation}
 html{scroll-behavior:smooth;height:100%;overflow-x:hidden}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;min-height:100dvh;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:none}
 h1,h2,h3,h4{font-family:'Sora',sans-serif}
@@ -2057,19 +2057,11 @@ function clearGeminiKey() {
 <script>
 // Prevent pinch zoom & double-tap zoom on all browsers/devices
 (function(){
-  // Block ONLY multi-touch (2+ fingers) — single finger scroll/tap works normally
-  var _multi = false;
+  // Block ONLY the initial 2-finger touch — scroll/tap with 1 finger works normally
   document.addEventListener('touchstart', function(e){
-    _multi = e.touches.length > 1;
-    if(_multi){ e.preventDefault(); e.stopImmediatePropagation(); }
-  }, {passive:false, capture:true});
-  document.addEventListener('touchmove', function(e){
-    if(_multi || e.touches.length > 1){ e.preventDefault(); e.stopImmediatePropagation(); }
-  }, {passive:false, capture:true});
-  document.addEventListener('touchend', function(e){
-    if(e.touches.length === 0) _multi = false;
-  }, {passive:true, capture:true});
-  // Safari gesture events
+    if(e.touches.length > 1) e.preventDefault();
+  }, {passive:false});
+  // Safari pinch events
   document.addEventListener('gesturestart',  function(e){e.preventDefault();},{passive:false});
   document.addEventListener('gesturechange', function(e){e.preventDefault();},{passive:false});
   document.addEventListener('gestureend',    function(e){e.preventDefault();},{passive:false});
