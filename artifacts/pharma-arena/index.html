@@ -37,7 +37,7 @@
   --text: #e2e8f0;
   --muted: #64748b;
 }
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;touch-action:manipulation}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;touch-action:pan-y}
 html{scroll-behavior:smooth;height:100%;overflow-x:hidden}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;min-height:100dvh;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:none}
 h1,h2,h3,h4{font-family:'Sora',sans-serif}
@@ -115,7 +115,7 @@ h1,h2,h3,h4{font-family:'Sora',sans-serif}
 .quick-card{padding:24px;border-radius:20px;cursor:pointer;transition:all .3s;position:relative;overflow:hidden;border:1px solid var(--border);background:var(--glass)}
 .quick-card:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.2)}
 .quick-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:16px}
-.systems-mini{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.systems-mini{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
 .systems-mini::-webkit-scrollbar{display:none}
 .system-mini-card{padding:16px 8px;border-radius:16px;text-align:center;cursor:pointer;transition:all .2s;border:1px solid var(--border);background:var(--glass)}
 .system-mini-card:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.2)}
@@ -1399,7 +1399,7 @@ function renderTutor(){
       ${_isAdmin?`<button onclick="showSettingsAuth()" style="padding:8px 12px;background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);border-radius:10px;color:#a78bfa;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap">⚙️ Settings</button>`:''}
     </div>
     ${_isAdmin&&!(GEMINI_KEY||localStorage.getItem('pa_gemini_key'))?`<div style="padding:14px 16px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:14px;margin-bottom:16px;display:flex;align-items:center;gap:12px"><span style="font-size:20px">⚠️</span><div style="flex:1"><p style="color:#f87171;font-size:13px;font-weight:600;margin-bottom:2px">Gemini API Key Required</p><p style="color:#f87171;font-size:12px;opacity:.8">Tap Settings to add your key and enable AI features</p></div><button onclick="showSettingsAuth()" style="padding:8px 14px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:10px;color:#f87171;font-size:12px;cursor:pointer;white-space:nowrap">Add Key</button></div>`:(!_isAdmin&&!(GEMINI_KEY||localStorage.getItem('pa_gemini_key'))?`<div style="padding:12px 16px;background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.2);border-radius:14px;margin-bottom:16px;display:flex;align-items:center;gap:12px"><span style="font-size:18px">🤖</span><p style="color:var(--muted);font-size:13px">AI features are being set up. Check back soon!</p></div>`:'')}
-    <div style="display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px">
+    <div style="display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px;touch-action:pan-x pan-y">
       ${['Mechanism of beta-blockers','Warfarin interactions','Opioid side effects','ACLS drugs','Aminoglycoside toxicity','How do SSRIs work?'].map(p=>`
       <button onclick="sendChat('${p}')" style="flex-shrink:0;padding:8px 14px;background:var(--glass);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap">${p}</button>`).join('')}
     </div>
@@ -1982,14 +1982,21 @@ function clearGeminiKey() {
 <script>
 // Prevent pinch zoom & double-tap zoom on all browsers/devices
 (function(){
-  document.addEventListener('gesturestart',function(e){e.preventDefault();},{passive:false});
-  document.addEventListener('gesturechange',function(e){e.preventDefault();},{passive:false});
-  document.addEventListener('gestureend',function(e){e.preventDefault();},{passive:false});
-  document.addEventListener('touchmove',function(e){if(e.touches.length>1)e.preventDefault();},{passive:false});
+  // Block ALL multi-touch gestures (two-finger scroll, pinch zoom, rotate)
+  function blockMultiTouch(e){
+    if(e.touches&&e.touches.length>1){e.preventDefault();e.stopPropagation();return false;}
+  }
+  document.addEventListener('touchstart', blockMultiTouch, {passive:false,capture:true});
+  document.addEventListener('touchmove',  blockMultiTouch, {passive:false,capture:true});
+  // Block Safari gesture events
+  document.addEventListener('gesturestart',  function(e){e.preventDefault();},{passive:false});
+  document.addEventListener('gesturechange', function(e){e.preventDefault();},{passive:false});
+  document.addEventListener('gestureend',    function(e){e.preventDefault();},{passive:false});
+  // Block double-tap zoom
   var lastTap=0;
   document.addEventListener('touchend',function(e){
     var now=Date.now();
-    if(now-lastTap<250){e.preventDefault();}
+    if(now-lastTap<250&&e.touches.length===0){e.preventDefault();}
     lastTap=now;
   },{passive:false});
 })();
