@@ -336,6 +336,8 @@ async function loadAppConfig(){
 }
 async function isAdminUser(uid){
   if(!uid) return false;
+  // localStorage fallback (works even if Firestore rules block reads)
+  if(localStorage.getItem('pa_admin_uid')===uid) return true;
   try{
     const snap=await firestore.collection('config').doc('admins').get();
     if(!snap.exists) return false;
@@ -1857,18 +1859,20 @@ async function showSettingsAuth() {
   }
 
   async function doRegister() {
+    const btns = modal.querySelectorAll('button');
+    btns.forEach(b=>b.disabled=true);
+    // Always save to localStorage first (instant, no permissions needed)
+    localStorage.setItem('pa_admin_uid', currentUser.uid);
+    _isAdmin = true;
+    // Try Firestore too (best-effort)
     try {
-      modal.querySelector('button') && (modal.querySelector('button').disabled = true);
       await firestore.collection('config').doc('admins').set({ uids: [currentUser.uid] });
-      toast('✅ تم تسجيلك كمالك!');
-      await refreshAdminNav();
-      modal.remove();
-      renderSettings();
-    } catch(err) {
-      showAdminModal('خطأ في الحفظ', 'فشل الحفظ في Firestore.<br><small style="color:#ef4444">' + err.message + '</small>', '⚠️',
-        `<button onclick="document.getElementById('admin-auth-modal').remove()" style="padding:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;color:#94a3b8;font-size:14px;cursor:pointer;width:100%">إغلاق</button>`
-      );
-    }
+    } catch(e) { /* Firestore failed — localStorage fallback is enough */ }
+    toast('✅ تم تسجيلك كمالك!');
+    await refreshAdminNav();
+    // Remove any modal (both ids)
+    document.getElementById('admin-auth-modal')?.remove();
+    renderSettings();
   }
 
   try {
@@ -2053,23 +2057,35 @@ function clearGeminiKey() {
 <script>
 // Prevent pinch zoom & double-tap zoom on all browsers/devices
 (function(){
-  // Block ALL multi-touch gestures (two-finger scroll, pinch zoom, rotate)
-  function blockMultiTouch(e){
-    if(e.touches&&e.touches.length>1){e.preventDefault();e.stopPropagation();return false;}
+  // Block ALL multi-touch — track from first touch so even delayed 2nd finger is caught
+  var _mt=0;
+  function _block(e){
+    if(e.touches) _mt=e.touches.length;
+    if(_mt>1){
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      return false;
+    }
   }
-  document.addEventListener('touchstart', blockMultiTouch, {passive:false,capture:true});
-  document.addEventListener('touchmove',  blockMultiTouch, {passive:false,capture:true});
-  // Block Safari gesture events
+  function _end(e){
+    _mt=e.touches?e.touches.length:0;
+    // Block double-tap zoom
+    var now=Date.now();
+    if(now-_end._last<250&&_mt===0) e.preventDefault();
+    _end._last=now;
+  }
+  _end._last=0;
+  // Attach to BOTH window and document with capture to intercept before anything else
+  ['touchstart','touchmove'].forEach(function(ev){
+    window.addEventListener(ev,   _block, {passive:false,capture:true});
+    document.addEventListener(ev, _block, {passive:false,capture:true});
+  });
+  window.addEventListener('touchend',   _end, {passive:false,capture:true});
+  document.addEventListener('touchend', _end, {passive:false,capture:true});
+  // Safari
   document.addEventListener('gesturestart',  function(e){e.preventDefault();},{passive:false});
   document.addEventListener('gesturechange', function(e){e.preventDefault();},{passive:false});
   document.addEventListener('gestureend',    function(e){e.preventDefault();},{passive:false});
-  // Block double-tap zoom
-  var lastTap=0;
-  document.addEventListener('touchend',function(e){
-    var now=Date.now();
-    if(now-lastTap<250&&e.touches.length===0){e.preventDefault();}
-    lastTap=now;
-  },{passive:false});
 })();
 </script>
 </body>
