@@ -400,6 +400,7 @@ const RANKS=[
   {name:"Pharma Legend",minXP:30000,badge:"👑"}
 ];
 
+let _isAdmin=false;
 const LEVELS=["beginner","intermediate","advanced","expert","master"];
 const LEVEL_ICONS=["🌱","📚","⚡","🏆","👨‍⚕️"];
 
@@ -770,8 +771,12 @@ function startQuizFor(systemId){
       <p style="color:var(--muted);margin-bottom:24px;font-size:14px">${sys.desc}</p>
       <div style="margin-bottom:20px">
         <label class="form-label">Difficulty Level</label>
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px">
-          ${LEVELS.map((l,i)=>`<button onclick="selectLevel(this,'${l}')" class="btn btn-secondary" style="padding:8px 2px;font-size:10px;flex-direction:column;gap:2px;border-radius:12px;min-width:0;max-width:100%;${i===0?'border-color:rgba(25,145,255,.5);background:rgba(25,145,255,.1);color:var(--primary)':''}" data-level-btn><span style="font-size:16px;line-height:1">${LEVEL_ICONS[i]}</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%;text-align:center;display:block;font-size:10px">${l[0].toUpperCase()+l.slice(1)}</span></button>`).join('')}
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <button onclick="selectLevel(this,'beginner')" class="level-card" style="border:1px solid rgba(16,185,129,.35);background:rgba(16,185,129,.12);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;width:100%;text-align:left;transition:all .2s;font-family:'DM Sans',sans-serif" data-level-btn data-color="#10b981" data-bg="rgba(16,185,129,.12)" data-border="rgba(16,185,129,.35)"><span style="width:40px;height:40px;border-radius:12px;background:rgba(16,185,129,.12);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🌱</span><span style="flex:1"><strong style="color:#fff;font-size:14px;display:block">Beginner</strong><span style="color:var(--muted);font-size:12px">Basic concepts & drug classes</span></span><span class="level-check" style="width:20px;height:20px;border-radius:50%;border:2px solid rgba(16,185,129,.35);background:rgba(16,185,129,.12);display:flex;align-items:center;justify-content:center;color:#10b981;font-size:11px;flex-shrink:0">✓</span></button>
+          <button onclick="selectLevel(this,'intermediate')" class="level-card" style="border:1px solid var(--border);background:var(--glass);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;width:100%;text-align:left;transition:all .2s;font-family:'DM Sans',sans-serif" data-level-btn data-color="#3b82f6" data-bg="rgba(59,130,246,.12)" data-border="rgba(59,130,246,.35)"><span style="width:40px;height:40px;border-radius:12px;background:rgba(59,130,246,.12);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📚</span><span style="flex:1"><strong style="color:#fff;font-size:14px;display:block">Intermediate</strong><span style="color:var(--muted);font-size:12px">Mechanisms & pharmacokinetics</span></span><span class="level-check" style="width:20px;height:20px;border-radius:50%;border:2px solid rgba(59,130,246,.35);background:;display:flex;align-items:center;justify-content:center;color:#3b82f6;font-size:11px;flex-shrink:0"></span></button>
+          <button onclick="selectLevel(this,'advanced')" class="level-card" style="border:1px solid var(--border);background:var(--glass);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;width:100%;text-align:left;transition:all .2s;font-family:'DM Sans',sans-serif" data-level-btn data-color="#f59e0b" data-bg="rgba(245,158,11,.12)" data-border="rgba(245,158,11,.35)"><span style="width:40px;height:40px;border-radius:12px;background:rgba(245,158,11,.12);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">⚡</span><span style="flex:1"><strong style="color:#fff;font-size:14px;display:block">Advanced</strong><span style="color:var(--muted);font-size:12px">Drug interactions & toxicity</span></span><span class="level-check" style="width:20px;height:20px;border-radius:50%;border:2px solid rgba(245,158,11,.35);background:;display:flex;align-items:center;justify-content:center;color:#f59e0b;font-size:11px;flex-shrink:0"></span></button>
+          <button onclick="selectLevel(this,'expert')" class="level-card" style="border:1px solid var(--border);background:var(--glass);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;width:100%;text-align:left;transition:all .2s;font-family:'DM Sans',sans-serif" data-level-btn data-color="#8b5cf6" data-bg="rgba(139,92,246,.12)" data-border="rgba(139,92,246,.35)"><span style="width:40px;height:40px;border-radius:12px;background:rgba(139,92,246,.12);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🏆</span><span style="flex:1"><strong style="color:#fff;font-size:14px;display:block">Expert</strong><span style="color:var(--muted);font-size:12px">Clinical pharmacology</span></span><span class="level-check" style="width:20px;height:20px;border-radius:50%;border:2px solid rgba(139,92,246,.35);background:;display:flex;align-items:center;justify-content:center;color:#8b5cf6;font-size:11px;flex-shrink:0"></span></button>
+          <button onclick="selectLevel(this,'master')" class="level-card" style="border:1px solid var(--border);background:var(--glass);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;width:100%;text-align:left;transition:all .2s;font-family:'DM Sans',sans-serif" data-level-btn data-color="#ef4444" data-bg="rgba(239,68,68,.12)" data-border="rgba(239,68,68,.35)"><span style="width:40px;height:40px;border-radius:12px;background:rgba(239,68,68,.12);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">👨‍⚕️</span><span style="flex:1"><strong style="color:#fff;font-size:14px;display:block">Master</strong><span style="color:var(--muted);font-size:12px">Board-level mastery</span></span><span class="level-check" style="width:20px;height:20px;border-radius:50%;border:2px solid rgba(239,68,68,.35);background:;display:flex;align-items:center;justify-content:center;color:#ef4444;font-size:11px;flex-shrink:0"></span></button>
         </div>
       </div>
       <div style="margin-bottom:24px">
@@ -787,8 +792,19 @@ function startQuizFor(systemId){
 }
 
 function selectLevel(el,level){
-  document.querySelectorAll('[onclick^="selectLevel"]').forEach(b=>{b.style.borderColor='';b.style.background='';b.style.color='';});
-  el.style.borderColor='rgba(25,145,255,.5)';el.style.background='rgba(25,145,255,.1)';el.style.color='var(--primary)';
+  document.querySelectorAll('[onclick^="selectLevel"]').forEach(b=>{
+    b.style.border='1px solid var(--border)';
+    b.style.background='var(--glass)';
+    const chk=b.querySelector('.level-check');
+    if(chk){chk.style.background='';chk.textContent='';}
+  });
+  const c=el.dataset.color||'var(--primary)';
+  const bg=el.dataset.bg||'rgba(25,145,255,.12)';
+  const br=el.dataset.border||'rgba(25,145,255,.35)';
+  el.style.border='1px solid '+br;
+  el.style.background=bg;
+  const chk=el.querySelector('.level-check');
+  if(chk){chk.style.background=bg;chk.textContent='✓';chk.style.color=c;}
   quizState.level=level;
 }
 function selectType(el,type){
@@ -1363,9 +1379,9 @@ function renderTutor(){
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:${GEMINI_KEY||localStorage.getItem('pa_gemini_key')?'20px':'12px'}">
       <div style="width:48px;height:48px;background:linear-gradient(135deg,var(--purple),#7c3aed);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;box-shadow:0 4px 20px rgba(139,92,246,.3)">🤖</div>
       <div style="flex:1"><h1 style="font-size:22px;font-weight:800;color:#fff">AI Pharmacology Tutor</h1><p style="color:var(--muted);font-size:13px">Powered by Gemini AI</p></div>
-      <button onclick="showSettingsAuth()" style="padding:8px 12px;background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);border-radius:10px;color:#a78bfa;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap">⚙️ Settings</button>
+      ${_isAdmin?`<button onclick="showSettingsAuth()" style="padding:8px 12px;background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);border-radius:10px;color:#a78bfa;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap">⚙️ Settings</button>`:''}
     </div>
-    ${!(GEMINI_KEY||localStorage.getItem('pa_gemini_key'))?`<div style="padding:14px 16px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:14px;margin-bottom:16px;display:flex;align-items:center;gap:12px"><span style="font-size:20px">⚠️</span><div style="flex:1"><p style="color:#f87171;font-size:13px;font-weight:600;margin-bottom:2px">Gemini API Key Required</p><p style="color:#f87171;font-size:12px;opacity:.8">Tap Settings to add your key and enable AI features</p></div><button onclick="showSettingsAuth()" style="padding:8px 14px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:10px;color:#f87171;font-size:12px;cursor:pointer;white-space:nowrap">Add Key</button></div>`:''}
+    ${_isAdmin&&!(GEMINI_KEY||localStorage.getItem('pa_gemini_key'))?`<div style="padding:14px 16px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:14px;margin-bottom:16px;display:flex;align-items:center;gap:12px"><span style="font-size:20px">⚠️</span><div style="flex:1"><p style="color:#f87171;font-size:13px;font-weight:600;margin-bottom:2px">Gemini API Key Required</p><p style="color:#f87171;font-size:12px;opacity:.8">Tap Settings to add your key and enable AI features</p></div><button onclick="showSettingsAuth()" style="padding:8px 14px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:10px;color:#f87171;font-size:12px;cursor:pointer;white-space:nowrap">Add Key</button></div>`:(!_isAdmin&&!(GEMINI_KEY||localStorage.getItem('pa_gemini_key'))?`<div style="padding:12px 16px;background:rgba(99,102,241,.06);border:1px solid rgba(99,102,241,.2);border-radius:14px;margin-bottom:16px;display:flex;align-items:center;gap:12px"><span style="font-size:18px">🤖</span><p style="color:var(--muted);font-size:13px">AI features are being set up. Check back soon!</p></div>`:'')}
     <div style="display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px">
       ${['Mechanism of beta-blockers','Warfarin interactions','Opioid side effects','ACLS drugs','Aminoglycoside toxicity','How do SSRIs work?'].map(p=>`
       <button onclick="sendChat('${p}')" style="flex-shrink:0;padding:8px 14px;background:var(--glass);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap">${p}</button>`).join('')}
@@ -1665,6 +1681,7 @@ function checkAdmin(){
 async function refreshAdminNav(){
   try{
     const ok=await isAdminUser(currentUser?.uid);
+    _isAdmin=ok;
     const nav=document.getElementById('nav-admin');
     if(nav) nav.style.display=ok?'':'none';
   }catch(e){}
@@ -1943,6 +1960,22 @@ function clearGeminiKey() {
   document.getElementById('settings-page')?.remove();
   loadAppConfig();
 }
+</script>
+
+<script>
+// Prevent pinch zoom & double-tap zoom on all browsers/devices
+(function(){
+  document.addEventListener('gesturestart',function(e){e.preventDefault();},{passive:false});
+  document.addEventListener('gesturechange',function(e){e.preventDefault();},{passive:false});
+  document.addEventListener('gestureend',function(e){e.preventDefault();},{passive:false});
+  document.addEventListener('touchmove',function(e){if(e.touches.length>1)e.preventDefault();},{passive:false});
+  var lastTap=0;
+  document.addEventListener('touchend',function(e){
+    var now=Date.now();
+    if(now-lastTap<250){e.preventDefault();}
+    lastTap=now;
+  },{passive:false});
+})();
 </script>
 </body>
 </html>
