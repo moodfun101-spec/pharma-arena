@@ -2057,32 +2057,19 @@ function clearGeminiKey() {
 <script>
 // Prevent pinch zoom & double-tap zoom on all browsers/devices
 (function(){
-  // Block ALL multi-touch — track from first touch so even delayed 2nd finger is caught
-  var _mt=0;
-  function _block(e){
-    if(e.touches) _mt=e.touches.length;
-    if(_mt>1){
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      return false;
-    }
-  }
-  function _end(e){
-    _mt=e.touches?e.touches.length:0;
-    // Block double-tap zoom
-    var now=Date.now();
-    if(now-_end._last<250&&_mt===0) e.preventDefault();
-    _end._last=now;
-  }
-  _end._last=0;
-  // Attach to BOTH window and document with capture to intercept before anything else
-  ['touchstart','touchmove'].forEach(function(ev){
-    window.addEventListener(ev,   _block, {passive:false,capture:true});
-    document.addEventListener(ev, _block, {passive:false,capture:true});
-  });
-  window.addEventListener('touchend',   _end, {passive:false,capture:true});
-  document.addEventListener('touchend', _end, {passive:false,capture:true});
-  // Safari
+  // Block ONLY multi-touch (2+ fingers) — single finger scroll/tap works normally
+  var _multi = false;
+  document.addEventListener('touchstart', function(e){
+    _multi = e.touches.length > 1;
+    if(_multi){ e.preventDefault(); e.stopImmediatePropagation(); }
+  }, {passive:false, capture:true});
+  document.addEventListener('touchmove', function(e){
+    if(_multi || e.touches.length > 1){ e.preventDefault(); e.stopImmediatePropagation(); }
+  }, {passive:false, capture:true});
+  document.addEventListener('touchend', function(e){
+    if(e.touches.length === 0) _multi = false;
+  }, {passive:true, capture:true});
+  // Safari gesture events
   document.addEventListener('gesturestart',  function(e){e.preventDefault();},{passive:false});
   document.addEventListener('gesturechange', function(e){e.preventDefault();},{passive:false});
   document.addEventListener('gestureend',    function(e){e.preventDefault();},{passive:false});
