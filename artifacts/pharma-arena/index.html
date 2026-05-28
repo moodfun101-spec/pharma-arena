@@ -1898,33 +1898,32 @@ async function showSettingsAuth() {
     if (ok) {
       renderSettings();
     } else {
-      // Locked out — offer override
+      // Not the owner — show access denied only, no override option
       const overlay = document.createElement('div');
       overlay.id = 'admin-auth-modal';
       overlay.style.cssText = 'position:fixed;inset:0;background:rgba(2,8,23,.92);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px';
-      overlay.innerHTML = `<div style="background:#0f172a;border:1px solid rgba(239,68,68,.2);border-radius:24px;padding:32px;max-width:380px;width:100%">
-        <div style="text-align:center;margin-bottom:24px">
-          <div style="font-size:48px;margin-bottom:12px">🔒</div>
-          <h2 style="color:#fff;font-size:18px;font-weight:700;margin-bottom:8px">حساب آخر مسجّل كمالك</h2>
-          <p style="color:#64748b;font-size:13px;line-height:1.5">حسابك الحالي ليس في قائمة المالكين.<br>يمكنك تسجيل نفسك بديلاً عن المالك الحالي.</p>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <button id="force-admin-btn" style="padding:14px;background:linear-gradient(135deg,#ef4444,#dc2626);border:none;border-radius:14px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;width:100%;font-family:'DM Sans',sans-serif">🔓 تسجيل حسابي الحالي كمالك</button>
-          <button onclick="document.getElementById('admin-auth-modal').remove()" style="padding:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;color:#94a3b8;font-size:14px;cursor:pointer;width:100%;font-family:'DM Sans',sans-serif">إلغاء</button>
-        </div>
+      overlay.innerHTML = `<div style="background:#0f172a;border:1px solid rgba(239,68,68,.2);border-radius:24px;padding:32px;max-width:380px;width:100%;text-align:center">
+        <div style="font-size:48px;margin-bottom:12px">🚫</div>
+        <h2 style="color:#fff;font-size:18px;font-weight:700;margin-bottom:8px">غير مصرّح</h2>
+        <p style="color:#64748b;font-size:13px;line-height:1.5;margin-bottom:24px">هذه الإعدادات مخصصة للمالك فقط.</p>
+        <button onclick="document.getElementById('admin-auth-modal').remove()" style="padding:12px 32px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:12px;color:#94a3b8;font-size:14px;cursor:pointer;font-family:'DM Sans',sans-serif">إغلاق</button>
       </div>`;
       document.body.appendChild(overlay);
-      document.getElementById('force-admin-btn').onclick = doRegister;
     }
   } catch(e) {
-    showAdminModal(
-      'فشل الاتصال',
-      'تعذّر الاتصال بقاعدة البيانات.<br><small style="color:#ef4444">' + e.message + '</small>',
-      '📡',
-      `<button id="force-reg-btn" style="padding:14px;background:linear-gradient(135deg,#f59e0b,#d97706);border:none;border-radius:14px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;width:100%;font-family:'DM Sans',sans-serif">⚡ تسجيل بدون تحقق</button>
-       <button onclick="document.getElementById('admin-auth-modal').remove()" style="padding:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;color:#94a3b8;font-size:14px;cursor:pointer;width:100%;font-family:'DM Sans',sans-serif">إغلاق</button>`
-    );
-    document.getElementById('force-reg-btn').onclick = doRegister;
+    // Firestore error — check localStorage fallback before denying
+    const localUid = localStorage.getItem('pa_admin_uid');
+    modal.remove();
+    if (localUid === currentUser?.uid) {
+      renderSettings();
+    } else {
+      showAdminModal(
+        'تعذّر الاتصال',
+        'تعذّر التحقق من الصلاحيات. تأكد من اتصالك بالإنترنت.',
+        '📡',
+        `<button onclick="document.getElementById('admin-auth-modal').remove()" style="padding:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;color:#94a3b8;font-size:14px;cursor:pointer;width:100%;font-family:'DM Sans',sans-serif">إغلاق</button>`
+      );
+    }
   }
 }
 
